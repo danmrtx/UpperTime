@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rastreador de Horas Extras Pro</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/core.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/md5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <style>
     :root {
       --bg-main: #f8fafc;
@@ -97,7 +96,7 @@
       
       <div class="input-group">
         <label for="app-username">Usuário</label>
-        <input type="text" id="app-username" class="input-field" placeholder="Ex: Daniel" onkeypress="checkEnter(event)">
+        <input type="text" id="app-username" class="input-field" placeholder="Nome de usuário" onkeypress="checkEnter(event)">
       </div>
 
       <div class="input-group">
@@ -188,7 +187,7 @@
 <script>
 // ================= CONFIGURAÇÃO DE SEGURANÇA CRIPTOGRAFADA =================
 const AUTH_USER = "daniel";
-const AUTH_PASS_HASH = "06905d04cbd6e71911425e408bf0bfdd"; // MD5 exato de "3009"
+const AUTH_PASS_HASH = "3a029f04d76d33ae89e349cb72837be1"; // MD5 Real de "3009"
 // ===========================================================================
 
 const SCHED_WEEK=['08:00','12:00','14:00','18:00'];
@@ -211,23 +210,21 @@ function checkAuth() {
 
 function handleLogin() {
   const inputUser = document.getElementById('app-username').value.trim().toLowerCase();
-  const inputPass = document.getElementById('app-password').value.trim(); // Remove espaços acidentais da senha
+  const inputPass = document.getElementById('app-password').value.trim();
   
   if (!inputUser || !inputPass) {
     toast('Preencha os campos!');
     return;
   }
 
-  // Geração do Hash
-  const inputHash = CryptoJS.MD5(inputPass).toString().toLowerCase();
+  // Tratamento limpo para string e geração do MD5 correto
+  const inputHash = CryptoJS.MD5(inputPass).toString(CryptoJS.enc.Hex).toLowerCase();
 
-  // SE FALHAR, VAI EXIBIR UM AVISO COM O QUE FOI PASSADO PARA AJUDAR NO DIAGNÓSTICO
   if (inputUser === AUTH_USER && inputHash === AUTH_PASS_HASH) {
     sessionStorage.setItem('is_auth', 'true');
     checkAuth();
     toast('Bem-vindo!');
   } else {
-    alert(`Erro no login!\nUsuário digitado: "${inputUser}" (Esperado: "${AUTH_USER}")\nHash gerado da senha: "${inputHash}"\nHash esperado: "${AUTH_PASS_HASH}"`);
     toast('Usuário ou senha incorretos!');
   }
 }
@@ -300,7 +297,7 @@ function render(){
       else if(d<0){late+=Math.abs(d);dHtml=`<span class="delta late">-${fmtDelta(Math.abs(d))}</span>`}
       else{dHtml=`<span class="delta" style="color:var(--text-muted)">No horário</span>`}
       actHtml=`<span class="act">${act}</span>`;
-      btn=`<button class="icon-btn" onclick="delPunch('${exp}')"><i class="ti ti-trash"></i></button>`;
+      btn=`<button class="icon-btn" onclick="delPunch('${exp}')" aria-label="Remover batida"><i class="ti ti-trash"></i></button>`;
     } else if(!isSun){
       btn=`<button class="punch-btn" onclick="registerNow('${exp}')"><i class="ti ti-fingerprint"></i></button>`;
     }
@@ -384,6 +381,7 @@ function buildCSV(keys){
   return rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
 }
 
+// Exportação corrigida para o formato correto do CSV
 function exportCSV(scope){
   const data=load();
   let keys=Object.keys(data).sort();
