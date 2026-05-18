@@ -156,9 +156,8 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ================= CONFIGURAÇÃO VIA URL PARAMS =================
-// O script vai validar apenas se o número gerado confere com o segredo.
-const SECRET_CODE = 171350; // Valida a chave numérica oculta
+// ================= CONFIGURAÇÃO DA CHAVE DA URL =================
+const CHAVE_URL = "3009"; 
 // ===============================================================
 
 const SCHED_WEEK=['08:00','12:00','14:00','18:00'];
@@ -171,16 +170,9 @@ let currentDate = new Date();
 function checkUrlAuth() {
   const urlParams = new URLSearchParams(window.location.search);
   const keyParam = urlParams.get('key') ? urlParams.get('key').trim() : '';
-  
-  let currentHash = 0;
-  for (let i = 0; i < keyParam.length; i++) {
-    currentHash = (currentHash << 5) - currentHash + keyParam.charCodeAt(i);
-    currentHash |= 0;
-  }
-  currentHash = Math.abs(currentHash);
 
-  if (currentHash === SECRET_CODE || sessionStorage.getItem('url_auth') === 'true') {
-    sessionStorage.setItem('url_auth', 'true');
+  // Checa diretamente se o parâmetro key é igual à nossa chave definida
+  if (keyParam === CHAVE_URL) {
     document.getElementById('error-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     render();
@@ -215,7 +207,7 @@ function showTab(tab){
   if(tab==='summary')renderSummary();
 }
 
-function render(){
+function render() {
   const data=load();
   const key=dateKey(currentDate);
   const punches=data[key]||{};
@@ -372,7 +364,7 @@ function clearAll(){
   localStorage.removeItem('ot_data');render();toast('Dados apagados.');
 }
 
-// Inicializa checando os parâmetros da URL
+// Inicializa checando a URL diretamente
 checkUrlAuth();
 </script>
 </body>
