@@ -21,23 +21,13 @@
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
     body { background-color: var(--bg-main); color: var(--text-main); padding: 1.5rem; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
-    .app-container { width: 100%; max-width: 480px; background: var(--bg-card); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border-color); overflow: hidden; padding: 1.5rem; }
-    .screen { display: none; }
-    .screen.active { display: block; }
-    .login-box { text-align: center; padding: 2rem 1rem; }
-    .login-box i { font-size: 3rem; color: var(--primary); margin-bottom: 1rem; }
-    .login-box h2 { margin-bottom: 0.5rem; font-size: 24px; }
-    .login-box p { color: var(--text-muted); font-size: 14px; margin-bottom: 1.5rem; }
-    .input-group { margin-bottom: 1rem; text-align: left; }
-    .input-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; }
-    .input-field { width: 100%; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 16px; outline: none; transition: border 0.2s; }
-    .input-field:focus { border-color: var(--primary); }
+    .app-container { width: 100%; max-width: 480px; background: var(--bg-card); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border-color); overflow: hidden; padding: 1.5rem; display: none; }
+    
     header { margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
     h1 { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
     h1 i { color: var(--primary); }
     .sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
-    .logout-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; padding: 4px; border-radius: 6px; }
-    .logout-btn:hover { color: var(--danger); background: #f1f5f9; }
+
     .tab-bar { display: flex; gap: 4px; background: #f1f5f9; padding: 4px; border-radius: 8px; margin-bottom: 1.5rem; }
     .tab { flex: 1; padding: 8px; text-align: center; font-size: 13px; font-weight: 500; border: none; border-radius: 6px; cursor: pointer; background: none; color: var(--text-muted); transition: all 0.2s; }
     .tab.active { background: var(--bg-card); color: var(--text-main); box-shadow: 0 1px 3px rgb(0 0 0 / 0.1); }
@@ -62,8 +52,6 @@
     .delta.early { color: var(--success); }.delta.late { color: var(--danger); }.delta.empty { color: var(--text-muted); }
     .btn { padding: 8px 14px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card); cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text-main); display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
     .btn:hover { background: #f8fafc; border-color: #cbd5e1; }
-    .btn-primary { background: var(--primary); color: white; border: none; justify-content: center; width: 100%; padding: 12px; font-weight: 600; margin-top: 0.5rem;}
-    .btn-primary:hover { background: var(--primary-hover); }
     .punch-btn { background: var(--primary); color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
     .punch-btn:hover { background: var(--primary-hover); }
     .icon-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 16px; padding: 6px; border-radius: 6px; }
@@ -81,38 +69,24 @@
     .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; border-radius: 8px; padding: 10px 20px; font-size: 13px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 1000; box-shadow: var(--shadow); }
     .toast.show { opacity: 1; }
     #weekend-msg { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px; text-align: center; font-size: 13px; color: #1e40af; margin-bottom: 1rem; }
+    
+    /* Mensagem de erro de acesso */
+    #error-screen { display: none; text-align: center; margin-top: 100px; color: var(--text-muted); font-size: 16px; }
   </style>
 </head>
 <body>
 
-<div class="app-container">
-  
-  <div id="screen-login" class="screen active">
-    <div class="login-box">
-      <i class="ti ti-lock-square-rounded"></i>
-      <h2>Painel de Ponto</h2>
-      <p>Insira suas credenciais para acessar o rastreador.</p>
-      
-      <div class="input-group">
-        <label for="app-username">Usuário</label>
-        <input type="text" id="app-username" class="input-field" placeholder="Nome de usuário" onkeypress="checkEnter(event)">
-      </div>
+<div id="error-screen">
+  <i class="ti ti-lock" style="font-size: 48px; color: var(--danger)"></i>
+  <p style="margin-top: 10px;">Acesso negado. URL incorreta ou incompleta.</p>
+</div>
 
-      <div class="input-group">
-        <label for="app-password">Senha</label>
-        <input type="password" id="app-password" class="input-field" placeholder="••••••••" onkeypress="checkEnter(event)">
-      </div>
-      <button class="btn btn-primary" onclick="handleLogin()">Entrar</button>
-    </div>
-  </div>
-
-  <div id="screen-app" class="screen">
+<div class="app-container" id="app">
     <header>
       <div>
         <h1><i class="ti ti-clock-bolt"></i> Horas Extras</h1>
         <p class="sub" id="today-lbl"></p>
       </div>
-      <button class="logout-btn" onclick="handleLogout()" title="Sair"><i class="ti ti-logout"></i></button>
     </header>
 
     <div class="tab-bar">
@@ -177,18 +151,15 @@
       <div class="sec-title">Zona de Perigo</div>
       <button class="btn" onclick="clearAll()" style="color:var(--danger); border-color:var(--danger); width:100%"><i class="ti ti-trash"></i> Apagar todos os dados</button>
     </div>
-
-  </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ================= CONFIGURAÇÃO DE SEGURANÇA LOCAL =================
-const AUTH_USER = "daniel";
-// Código interno para validar a senha "3009" de forma protegida
-const AUTH_CODE = 171350; 
-// ===================================================================
+// ================= CONFIGURAÇÃO VIA URL PARAMS =================
+// O script vai validar apenas se o número gerado confere com o segredo.
+const SECRET_CODE = 171350; // Valida a chave numérica oculta
+// ===============================================================
 
 const SCHED_WEEK=['08:00','12:00','14:00','18:00'];
 const SCHED_SAT=['08:00','12:00'];
@@ -197,57 +168,26 @@ const MONTHS=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov',
 
 let currentDate = new Date();
 
-// Função interna nativa para embaralhar a senha sem depender de bibliotecas web
-function generateLocalCode(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash << 5) - hash + str.charCodeAt(i);
-    hash |= 0;
+function checkUrlAuth() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const keyParam = urlParams.get('key') ? urlParams.get('key').trim() : '';
+  
+  let currentHash = 0;
+  for (let i = 0; i < keyParam.length; i++) {
+    currentHash = (currentHash << 5) - currentHash + keyParam.charCodeAt(i);
+    currentHash |= 0;
   }
-  return Math.abs(hash);
-}
+  currentHash = Math.abs(currentHash);
 
-function checkAuth() {
-  if (sessionStorage.getItem('is_auth') === 'true') {
-    document.getElementById('screen-login').classList.remove('active');
-    document.getElementById('screen-app').classList.add('active');
+  if (currentHash === SECRET_CODE || sessionStorage.getItem('url_auth') === 'true') {
+    sessionStorage.setItem('url_auth', 'true');
+    document.getElementById('error-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
     render();
   } else {
-    document.getElementById('screen-login').classList.add('active');
-    document.getElementById('screen-app').classList.remove('active');
+    document.getElementById('error-screen').style.display = 'block';
+    document.getElementById('app').style.display = 'none';
   }
-}
-
-function handleLogin() {
-  const inputUser = document.getElementById('app-username').value.trim().toLowerCase();
-  const inputPass = document.getElementById('app-password').value.trim();
-  
-  if (!inputUser || !inputPass) {
-    toast('Preencha os campos!');
-    return;
-  }
-
-  // Gera o código a partir do que foi digitado
-  const generatedCode = generateLocalCode(inputPass);
-
-  if (inputUser === AUTH_USER && generatedCode === AUTH_CODE) {
-    sessionStorage.setItem('is_auth', 'true');
-    checkAuth();
-    toast('Bem-vindo!');
-  } else {
-    toast('Usuário ou senha incorretos!');
-  }
-}
-
-function handleLogout() {
-  sessionStorage.removeItem('is_auth');
-  document.getElementById('app-username').value = '';
-  document.getElementById('app-password').value = '';
-  checkAuth();
-}
-
-function checkEnter(e) {
-  if (e.key === 'Enter') handleLogin();
 }
 
 function getSched(d){return d.getDay()===6?SCHED_SAT:SCHED_WEEK}
@@ -276,7 +216,6 @@ function showTab(tab){
 }
 
 function render(){
-  if(sessionStorage.getItem('is_auth') !== 'true') return;
   const data=load();
   const key=dateKey(currentDate);
   const punches=data[key]||{};
@@ -433,7 +372,8 @@ function clearAll(){
   localStorage.removeItem('ot_data');render();toast('Dados apagados.');
 }
 
-checkAuth();
+// Inicializa checando os parâmetros da URL
+checkUrlAuth();
 </script>
 </body>
 </html>
