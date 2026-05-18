@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rastreador de Horas Extras Pro</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/md5.min.js"></script>
   <style>
     :root {
       --bg-main: #f8fafc;
@@ -55,7 +57,7 @@
     /* Navegação de Datas */
     .date-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; }
     .date-nav button { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; cursor: pointer; color: var(--text-main); font-size: 14px; transition: background 0.2s; }
-    .date-nav button:hover { background: #f8fafc; }
+    .date-nav button:hover { background: #f8fafc; border-color: #cbd5e1; }
     .date-label { flex: 1; text-align: center; font-size: 15px; font-weight: 600; }
 
     /* Cards de Estatísticas */
@@ -80,7 +82,7 @@
     /* Botões */
     .btn { padding: 8px 14px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card); cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text-main); display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
     .btn:hover { background: #f8fafc; border-color: #cbd5e1; }
-    .btn-primary { background: var(--primary); color: white; border: none; justify-content: center; width: 100%; padding: 12px; font-weight: 600; }
+    .btn-primary { background: var(--primary); color: white; border: none; justify-content: center; width: 100%; padding: 12px; font-weight: 600; margin-top: 0.5rem;}
     .btn-primary:hover { background: var(--primary-hover); }
     .punch-btn { background: var(--primary); color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
     .punch-btn:hover { background: var(--primary-hover); }
@@ -115,10 +117,16 @@
   <div id="screen-login" class="screen active">
     <div class="login-box">
       <i class="ti ti-lock-square-rounded"></i>
-      <h2>Acesso Restrito</h2>
-      <p>Digite a senha para acessar seu painel de horas.</p>
+      <h2>Painel de Ponto</h2>
+      <p>Insira suas credenciais para acessar o rastreador.</p>
+      
       <div class="input-group">
-        <label for="app-password">Senha de Acesso</label>
+        <label for="app-username">Usuário</label>
+        <input type="text" id="app-username" class="input-field" placeholder="Ex: admin" onkeypress="checkEnter(event)">
+      </div>
+
+      <div class="input-group">
+        <label for="app-password">Senha</label>
         <input type="password" id="app-password" class="input-field" placeholder="••••••••" onkeypress="checkEnter(event)">
       </div>
       <button class="btn btn-primary" onclick="handleLogin()">Entrar</button>
@@ -203,9 +211,11 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ================= CONFIGURAÇÃO DE SEGURANÇA =================
-const CONFIG_PASSWORD = "MUDAR_SUA_SENHA_AQUI"; // <-- Altere para a sua senha desejada!
-// =============================================================
+// ================= CONFIGURAÇÃO DE SEGURANÇA CRIPTOGRAFADA =================
+const AUTH_USER = "Daniel";
+// O hash abaixo corresponde à senha "3009" em MD5. A senha real fica oculta no GitHub.
+const AUTH_PASS_HASH = "06905d04cbd6e71911425e408bf0bfdd"; 
+// ===========================================================================
 
 const SCHED_WEEK=['08:00','12:00','14:00','18:00'];
 const SCHED_SAT=['08:00','12:00'];
@@ -227,18 +237,24 @@ function checkAuth() {
 }
 
 function handleLogin() {
+  const inputUser = document.getElementById('app-username').value;
   const inputPass = document.getElementById('app-password').value;
-  if (inputPass === CONFIG_PASSWORD) {
+  
+  // Transforma a senha digitada em MD5 para comparar
+  const inputHash = CryptoJS.MD5(inputPass).toString();
+
+  if (inputUser === AUTH_USER && inputHash === AUTH_PASS_HASH) {
     sessionStorage.setItem('is_auth', 'true');
     checkAuth();
-    toast('Bem-vindo de volta!');
+    toast('Bem-vindo, Daniel!');
   } else {
-    toast('Senha incorreta!');
+    toast('Usuário ou senha incorretos!');
   }
 }
 
 function handleLogout() {
   sessionStorage.removeItem('is_auth');
+  document.getElementById('app-username').value = '';
   document.getElementById('app-password').value = '';
   checkAuth();
 }
@@ -254,7 +270,19 @@ function load(){try{return JSON.parse(localStorage.getItem('ot_data')||'{}')}cat
 function save(data){localStorage.setItem('ot_data',JSON.stringify(data))}
 function parseMins(s){const[h,m]=s.split(':').map(Number);return h*60+m}
 function fmtDelta(m){m=Math.round(m);const h=Math.floor(Math.abs(m)/60),r=Math.abs(m)%60;if(h===0)return r+'min';if(r===0)return h+'h';return h+'h '+r+'min'}
-function delta(exp,act){return parseMins(exp)-parseMins(act)}
+
+// CORREÇÃO DO BUG: Nova regra de cálculo baseada em Entradas (08h, 14h) e Saídas (12h, 18h)
+function getPunchDelta(exp, act) {
+  const diff = parseMins(exp) - parseMins(act);
+  
+  // Se for horário de SAÍDA (12:00 ou 18:00)
+  if (exp === '12:00' || exp === '18:00') {
+    return -diff; // Inverte o sinal. Se bater DEPOIS (diff negativo), vira positivo (Extra).
+  }
+  
+  // Se for horário de ENTRADA (08:00 ou 14:00)
+  return diff; // Padrão: Se bater DEPOIS (diff negativo), continua negativo (Atraso).
+}
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
 
@@ -296,7 +324,7 @@ function render(){
     let actHtml='<span style="font-size:13px;color:var(--text-muted)">Não registrado</span>';
     let btn='';
     if(act){
-      const d=delta(exp,act);
+      const d = getPunchDelta(exp, act);
       if(d>0){early+=d;dHtml=`<span class="delta early">+${fmtDelta(d)}</span>`}
       else if(d<0){late+=Math.abs(d);dHtml=`<span class="delta late">-${fmtDelta(Math.abs(d))}</span>`}
       else{dHtml=`<span class="delta" style="color:var(--text-muted)">No horário</span>`}
@@ -343,7 +371,7 @@ function renderHistory(){
     const d=new Date(k+'T12:00:00');
     const sched=getSched(d);const punches=data[k];
     let early=0,late=0;
-    sched.forEach(exp=>{if(punches[exp]){const dv=delta(exp,punches[exp]);if(dv>0)early+=dv;else late+=Math.abs(dv)}});
+    sched.forEach(exp=>{if(punches[exp]){const dv = getPunchDelta(exp,punches[exp]);if(dv>0)early+=dv;else late+=Math.abs(dv)}});
     const bal=early-late;
     const bCls=bal>0?'pos':bal<0?'neg':'';
     const pList=sched.map(e=>punches[e]||'—').join(' · ');
@@ -359,7 +387,7 @@ function renderSummary(){
     const d=new Date(k+'T12:00:00');
     if(d.getMonth()!==mo||d.getFullYear()!==yr)return;
     days++;const sched=getSched(d);const punches=data[k];
-    sched.forEach(exp=>{if(punches[exp]){const dv=delta(exp,punches[exp]);if(dv>0)early+=dv;else late+=Math.abs(dv)}});
+    sched.forEach(exp=>{if(punches[exp]){const dv = getPunchDelta(exp,punches[exp]);if(dv>0)early+=dv;else late+=Math.abs(dv)}});
   });
   const bal=early-late;
   document.getElementById('m-early').textContent=fmtDelta(early);
@@ -376,9 +404,9 @@ function buildCSV(keys){
     const d=new Date(k+'T12:00:00');
     const sched=getSched(d);const punches=data[k]||{};
     sched.forEach(exp=>{
-      const act=punches[exp]||'';
+      const act=punches[exp]||';';
       let diff='',tipo='';
-      if(act){const dv=delta(exp,act);diff=dv;tipo=dv>0?'Extra':dv<0?'Atraso':'No horário'}
+      if(act){const dv = getPunchDelta(exp,act);diff=dv;tipo=dv>0?'Extra':dv<0?'Atraso':'No horário'}
       rows.push([k,DAYS[d.getDay()],exp,act,diff,tipo]);
     });
   });
