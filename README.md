@@ -2,12 +2,10 @@ Projeto para fazer tracking de suas horas extras no trabalho CLT.
 Se você quer saber se esta com hora extra ou está devendo, voce mesmo pode registrar seus pontos nesse programa para ter esse calculo antes de vim a folha no final do mes.
 É possivel exportar os horarios para arquivo CSV.
 
-Banco de dados via Supabase, so mudar para seus links e chave API. Caso tenha horarios diferentes (Ex: entre as 07:00 e saia 17:00 ou tenha horario de almoços diferente) so mudar no codigo onde tiver os horarios.
+Banco de dados via Supabase, so mudar para seus links e chave API. Caso tenha horarios diferentes (Ex: entre as 07:00 e saia 17:00 ou tenha horario de almoço diferente) so mudar no codigo onde tiver os horarios.
 
 Hora extra: 
-Entrar ANTES de 08:00 e 14:00 fica minutos positivos. (Inversamente proporsional)
-
-Sair DEPOIS de 12:00 e 18:00 fica minutos positivos. (Inversamente proporsional)
+Entrar ANTES de 08:00 e 14:00 fica minutos positivos (Inversamente proporsional) e Sair DEPOIS de 12:00 e 18:00 fica minutos positivos. (Inversamente proporsional)
 
 Crie sua tabela com esse query:
 
