@@ -212,8 +212,8 @@
 
 <script>
 // ================= CONFIGURAÇÃO DE SEGURANÇA CRIPTOGRAFADA =================
-const AUTH_USER = "Daniel";
-// O hash abaixo corresponde à senha "3009" em MD5. A senha real fica oculta no GitHub.
+const AUTH_USER = "daniel"; // Sempre checado em minúsculo internamente
+// O hash abaixo corresponde à senha "3009" em MD5 (letras estritamente minúsculas).
 const AUTH_PASS_HASH = "06905d04cbd6e71911425e408bf0bfdd"; 
 // ===========================================================================
 
@@ -237,16 +237,17 @@ function checkAuth() {
 }
 
 function handleLogin() {
-  const inputUser = document.getElementById('app-username').value;
+  // Coleta os dados e transforma o usuário para minúsculo para evitar erros de digitação (Ex: Daniel vs daniel)
+  const inputUser = document.getElementById('app-username').value.trim().toLowerCase();
   const inputPass = document.getElementById('app-password').value;
   
-  // Transforma a senha digitada em MD5 para comparar
-  const inputHash = CryptoJS.MD5(inputPass).toString();
+  // Transforma a senha digitada em MD5 (forçando formato minúsculo padrão)
+  const inputHash = CryptoJS.MD5(inputPass).toString().toLowerCase();
 
   if (inputUser === AUTH_USER && inputHash === AUTH_PASS_HASH) {
     sessionStorage.setItem('is_auth', 'true');
     checkAuth();
-    toast('Bem-vindo, Daniel!');
+    toast('Bem-vindo de volta!');
   } else {
     toast('Usuário ou senha incorretos!');
   }
@@ -271,17 +272,17 @@ function save(data){localStorage.setItem('ot_data',JSON.stringify(data))}
 function parseMins(s){const[h,m]=s.split(':').map(Number);return h*60+m}
 function fmtDelta(m){m=Math.round(m);const h=Math.floor(Math.abs(m)/60),r=Math.abs(m)%60;if(h===0)return r+'min';if(r===0)return h+'h';return h+'h '+r+'min'}
 
-// CORREÇÃO DO BUG: Nova regra de cálculo baseada em Entradas (08h, 14h) e Saídas (12h, 18h)
+// Regra de cálculo baseada em Entradas (08h, 14h) e Saídas (12h, 18h)
 function getPunchDelta(exp, act) {
   const diff = parseMins(exp) - parseMins(act);
   
   // Se for horário de SAÍDA (12:00 ou 18:00)
   if (exp === '12:00' || exp === '18:00') {
-    return -diff; // Inverte o sinal. Se bater DEPOIS (diff negativo), vira positivo (Extra).
+    return -diff; // Inverte o sinal. Se bater DEPOIS, vira positivo (Extra).
   }
   
   // Se for horário de ENTRADA (08:00 ou 14:00)
-  return diff; // Padrão: Se bater DEPOIS (diff negativo), continua negativo (Atraso).
+  return diff; // Padrão: Se bater DEPOIS, continua negativo (Atraso).
 }
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
@@ -348,6 +349,7 @@ function registerNow(exp){
   if(!data[key])data[key]={};data[key][exp]=act;save(data);render();
 }
 
+// Garante o funcionamento correto do registro manual com a nova lógica
 function addManual(){
   const exp=document.getElementById('man-exp').value;
   const t=document.getElementById('man-time').value;
