@@ -69,9 +69,8 @@
     .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; border-radius: 8px; padding: 10px 20px; font-size: 13px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 1000; box-shadow: var(--shadow); }
     .toast.show { opacity: 1; }
     #weekend-msg { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px; text-align: center; font-size: 13px; color: #1e40af; margin-bottom: 1rem; }
-    
-    /* Mensagem de erro de acesso */
     #error-screen { display: none; text-align: center; margin-top: 100px; color: var(--text-muted); font-size: 16px; }
+    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); display: none; justify-content: center; align-items: center; z-index: 2000; font-weight: 600; color: var(--primary); }
   </style>
 </head>
 <body>
@@ -80,6 +79,8 @@
   <i class="ti ti-lock" style="font-size: 48px; color: var(--danger)"></i>
   <p style="margin-top: 10px;">Acesso negado. URL incorreta ou incompleta.</p>
 </div>
+
+<div class="loading-overlay" id="loading">Sincronizando com a nuvem...</div>
 
 <div class="app-container" id="app">
     <header>
@@ -137,28 +138,23 @@
     </div>
 
     <div id="view-data" class="tab-view" style="display:none">
-      <div class="sec-title">Exportar dados</div>
-      <div class="export-bar">
-        <button class="btn" onclick="exportCSV('month')"><i class="ti ti-download"></i> Mês Atual</button>
-        <button class="btn" onclick="exportCSV('all')"><i class="ti ti-download"></i> Completo</button>
-      </div>
-      <div class="sec-title">Importar CSV</div>
-      <div class="import-area" onclick="document.getElementById('csv-input').click()">
-        <i class="ti ti-cloud-upload" style="font-size:28px; color: var(--primary)"></i>
-        <p>Clique aqui para fazer upload do seu CSV</p>
-        <input type="file" id="csv-input" accept=".csv" style="display:none" onchange="importCSV(event)"/>
+      <div class="sec-title">Ações</div>
+      <div class="export-bar" style="grid-template-columns: 1fr;">
+        <button class="btn" onclick="exportCSV('all')"><i class="ti ti-download"></i> Baixar Backup Completo (CSV)</button>
       </div>
       <div class="sec-title">Zona de Perigo</div>
-      <button class="btn" onclick="clearAll()" style="color:var(--danger); border-color:var(--danger); width:100%"><i class="ti ti-trash"></i> Apagar todos os dados</button>
+      <button class="btn" onclick="clearAllServer()" style="color:var(--danger); border-color:var(--danger); width:100%"><i class="ti ti-trash"></i> Apagar todos os dados da nuvem</button>
     </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ================= CONFIGURAÇÃO DA CHAVE DA URL =================
+// ================= CONFIGURAÇÃO DO SUPABASE E URL =================
 const CHAVE_URL = "3009"; 
-// ===============================================================
+const SUPABASE_URL = "https://pnlsopcqsbotvqyctovz.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBubHNvcGNxc2JvdHZxeWN0b3Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMTc4MDYsImV4cCI6MjA5NDY5MzgwNn0.wkx_X47q1RfqG91HnH0V5yfOZAR0hiKRPFZ1Zscopag";
+// ==================================================================
 
 const SCHED_WEEK=['08:00','12:00','14:00','18:00'];
 const SCHED_SAT=['08:00','12:00'];
@@ -166,16 +162,85 @@ const DAYS=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const MONTHS=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
 
 let currentDate = new Date();
+let cacheDadosNuvem = {};
 
+function showLoading(v){ document.getElementById('loading').style.display = v ? 'flex' : 'none'; }
+
+// --- CONEXÃO COM O SUPABASE ---
+async function carregarDadosNuvem() {
+  showLoading(true);
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/tabela_pontos?select=*`, {
+      method: 'GET',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    const linhas = await res.json();
+    
+    cacheDadosNuvem = {};
+    linhas.forEach(item => {
+      if (!cacheDadosNuvem[item.data_registro]) cacheDadosNuvem[item.data_registro] = {};
+      cacheDadosNuvem[item.data_registro][item.horario_esperado] = item.horario_real;
+    });
+    render();
+  } catch(e) {
+    toast('Erro ao sincronizar dados da nuvem.');
+  } finally {
+    showLoading(false);
+  }
+}
+
+async function salvarPontoNuvem(dataStr, expStr, actStr) {
+  showLoading(true);
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/tabela_pontos?data_registro=eq.${dataStr}&horario_esperado=eq.${expStr}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+
+    if (actStr) {
+      await fetch(`${SUPABASE_URL}/rest/v1/tabela_pontos`, {
+        method: 'POST',
+        headers: { 
+          'apikey': SUPABASE_KEY, 
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ data_registro: dataStr, horario_esperado: expStr, horario_real: actStr })
+      });
+    }
+    await carregarDadosNuvem();
+  } catch(e) {
+    toast('Erro ao salvar no servidor.');
+    showLoading(false);
+  }
+}
+
+async function clearAllServer() {
+  if(!confirm('Apagar TODOS os registros salvos na nuvem? Essa ação não pode ser desfeita.')) return;
+  showLoading(true);
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/tabela_pontos?id=gt.0`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    toast('Todos os dados foram limpos da nuvem.');
+    await carregarDadosNuvem();
+  } catch(e) {
+    toast('Erro ao limpar base de dados.');
+    showLoading(false);
+  }
+}
+
+// --- CONTROLE DE INTERFACE ---
 function checkUrlAuth() {
   const urlParams = new URLSearchParams(window.location.search);
   const keyParam = urlParams.get('key') ? urlParams.get('key').trim() : '';
 
-  // Checa diretamente se o parâmetro key é igual à nossa chave definida
   if (keyParam === CHAVE_URL) {
     document.getElementById('error-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
-    render();
+    carregarDadosNuvem();
   } else {
     document.getElementById('error-screen').style.display = 'block';
     document.getElementById('app').style.display = 'none';
@@ -184,8 +249,6 @@ function checkUrlAuth() {
 
 function getSched(d){return d.getDay()===6?SCHED_SAT:SCHED_WEEK}
 function dateKey(d){return d.toISOString().slice(0,10)}
-function load(){try{return JSON.parse(localStorage.getItem('ot_data')||'{}')}catch{return{}}}
-function save(data){localStorage.setItem('ot_data',JSON.stringify(data))}
 function parseMins(s){const[h,m]=s.split(':').map(Number);return h*60+m}
 function fmtDelta(m){m=Math.round(m);const h=Math.floor(Math.abs(m)/60),r=Math.abs(m)%60;if(h===0)return r+'min';if(r===0)return h+'h';return h+'h '+r+'min'}
 
@@ -208,9 +271,8 @@ function showTab(tab){
 }
 
 function render() {
-  const data=load();
   const key=dateKey(currentDate);
-  const punches=data[key]||{};
+  const punches=cacheDadosNuvem[key]||{};
   const sched=getSched(currentDate);
   const isSun=currentDate.getDay()===0;
   const isSat=currentDate.getDay()===6;
@@ -253,32 +315,30 @@ function render() {
 function registerNow(exp){
   const now=new Date();
   const act=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-  const data=load();const key=dateKey(currentDate);
-  if(!data[key])data[key]={};data[key][exp]=act;save(data);render();
+  const key=dateKey(currentDate);
+  salvarPontoNuvem(key, exp, act);
 }
 
 function addManual(){
   const exp=document.getElementById('man-exp').value;
   const t=document.getElementById('man-time').value;
   if(!t){toast('Informe o horário');return}
-  const data=load();const key=dateKey(currentDate);
-  if(!data[key])data[key]={};data[key][exp]=t;save(data);render();toast('Registrado!');
+  const key=dateKey(currentDate);
+  salvarPontoNuvem(key, exp, t);
 }
 
 function delPunch(exp){
-  const data=load();const key=dateKey(currentDate);
-  if(data[key]){delete data[key][exp];if(!Object.keys(data[key]).length)delete data[key]}
-  save(data);render();
+  const key=dateKey(currentDate);
+  salvarPontoNuvem(key, exp, null);
 }
 
 function renderHistory(){
-  const data=load();
-  const keys=Object.keys(data).sort().reverse().slice(0,60);
+  const keys=Object.keys(cacheDadosNuvem).sort().reverse().slice(0,60);
   if(!keys.length){document.getElementById('hist-list').innerHTML='<div style="color:var(--text-muted);font-size:14px;padding:12px 0">Nenhum registro encontrado.</div>';return}
   let html='';
   keys.forEach(k=>{
     const d=new Date(k+'T12:00:00');
-    const sched=getSched(d);const punches=data[k];
+    const sched=getSched(d);const punches=cacheDadosNuvem[k];
     let early=0,late=0;
     sched.forEach(exp=>{if(punches[exp]){const dv = getPunchDelta(exp,punches[exp]);if(dv>0)early+=dv;else late+=Math.abs(dv)}});
     const bal=early-late;
@@ -290,12 +350,12 @@ function renderHistory(){
 }
 
 function renderSummary(){
-  const data=load();const now=new Date();const mo=now.getMonth();const yr=now.getFullYear();
+  const now=new Date();const mo=now.getMonth();const yr=now.getFullYear();
   let early=0,late=0,days=0;
-  Object.keys(data).forEach(k=>{
+  Object.keys(cacheDadosNuvem).forEach(k=>{
     const d=new Date(k+'T12:00:00');
     if(d.getMonth()!==mo||d.getFullYear()!==yr)return;
-    days++;const sched=getSched(d);const punches=data[k];
+    days++;const sched=getSched(d);const punches=cacheDadosNuvem[k];
     sched.forEach(exp=>{if(punches[exp]){const dv = getPunchDelta(exp,punches[exp]);if(dv>0)early+=dv;else late+=Math.abs(dv)}});
   });
   const bal=early-late;
@@ -307,13 +367,12 @@ function renderSummary(){
 }
 
 function buildCSV(keys){
-  const data=load();
   const rows=[['Data','Dia da semana','Horário esperado','Horário registrado','Diferença (min)','Tipo']];
   keys.forEach(k=>{
     const d=new Date(k+'T12:00:00');
-    const sched=getSched(d);const punches=data[k]||{};
+    const sched=getSched(d);const punches=cacheDadosNuvem[k]||{};
     sched.forEach(exp=>{
-      const act=punches[exp]||';';
+      const act=punches[exp]||'';
       let diff='',tipo='';
       if(act){const dv = getPunchDelta(exp,act);diff=dv;tipo=dv>0?'Extra':dv<0?'Atraso':'No horário'}
       rows.push([k,DAYS[d.getDay()],exp,act,diff,tipo]);
@@ -323,48 +382,18 @@ function buildCSV(keys){
 }
 
 function exportCSV(scope){
-  const data=load();
-  let keys=Object.keys(data).sort();
-  if(scope==='month'){const now=new Date();keys=keys.filter(k=>{const d=new Date(k+'T12:00:00');return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()})}
+  let keys=Object.keys(cacheDadosNuvem).sort();
   if(!keys.length){toast('Nenhum dado para exportar');return}
   const csv=buildCSV(keys);
   const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  const now=new Date();
   a.href=url;
-  a.download=`horas_extras_${scope==='month'?(now.getFullYear()+'_'+(now.getMonth()+1)):'completo'}.csv`;
+  a.download=`backup_pontos_nuvem.csv`;
   a.click();URL.revokeObjectURL(url);
-  toast('CSV baixado!');
+  toast('Backup baixado!');
 }
 
-function importCSV(e){
-  const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    const lines=ev.target.result.replace(/\r/g,'').split('\n').filter(l=>l.trim());
-    if(lines.length<2){toast('CSV inválido');return}
-    const data=load();let count=0;
-    lines.slice(1).forEach(line=>{
-      const cols=line.split(',').map(c=>c.replace(/^"|"$/g,'').replace(/""/g,'"'));
-      const [dateStr,,exp,act]=cols;
-      if(!dateStr||!exp||!act||!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)||!/^\d{2}:\d{2}$/.test(act))return;
-      if(!data[dateStr])data[dateStr]={};
-      data[dateStr][exp]=act;count++;
-    });
-    save(data);render();
-    document.getElementById('csv-input').value='';
-    toast(`${count} registros importados!`);
-  };
-  reader.readAsText(file,'UTF-8');
-}
-
-function clearAll(){
-  if(!confirm('Apagar TODOS os registros? Esta ação não pode ser desfeita.'))return;
-  localStorage.removeItem('ot_data');render();toast('Dados apagados.');
-}
-
-// Inicializa checando a URL diretamente
 checkUrlAuth();
 </script>
 </body>
