@@ -21,17 +21,11 @@
       --radius: 12px;
       --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
     body { background-color: var(--bg-main); color: var(--text-main); padding: 1.5rem; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
-    
     .app-container { width: 100%; max-width: 480px; background: var(--bg-card); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border-color); overflow: hidden; padding: 1.5rem; }
-    
-    /* Telas (Login / App) */
     .screen { display: none; }
     .screen.active { display: block; }
-
-    /* Estilo do Login */
     .login-box { text-align: center; padding: 2rem 1rem; }
     .login-box i { font-size: 3rem; color: var(--primary); margin-bottom: 1rem; }
     .login-box h2 { margin-bottom: 0.5rem; font-size: 24px; }
@@ -40,35 +34,25 @@
     .input-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; }
     .input-field { width: 100%; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 16px; outline: none; transition: border 0.2s; }
     .input-field:focus { border-color: var(--primary); }
-    
-    /* Cabeçalho */
     header { margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
     h1 { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
     h1 i { color: var(--primary); }
     .sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
     .logout-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; padding: 4px; border-radius: 6px; }
     .logout-btn:hover { color: var(--danger); background: #f1f5f9; }
-
-    /* Abas Nav */
     .tab-bar { display: flex; gap: 4px; background: #f1f5f9; padding: 4px; border-radius: 8px; margin-bottom: 1.5rem; }
     .tab { flex: 1; padding: 8px; text-align: center; font-size: 13px; font-weight: 500; border: none; border-radius: 6px; cursor: pointer; background: none; color: var(--text-muted); transition: all 0.2s; }
     .tab.active { background: var(--bg-card); color: var(--text-main); box-shadow: 0 1px 3px rgb(0 0 0 / 0.1); }
-
-    /* Navegação de Datas */
     .date-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; }
     .date-nav button { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; cursor: pointer; color: var(--text-main); font-size: 14px; transition: background 0.2s; }
     .date-nav button:hover { background: #f8fafc; border-color: #cbd5e1; }
     .date-label { flex: 1; text-align: center; font-size: 15px; font-weight: 600; }
-
-    /* Cards de Estatísticas */
     .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 1.5rem; }
     .stat { background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 14px; }
     .stat-lbl { font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 4px; }
     .stat-val { font-size: 20px; font-weight: 700; color: var(--text-main); }
     .stat-val.pos { color: var(--success); }
     .stat-val.neg { color: var(--danger); }
-
-    /* Listas e Linhas */
     .sec-title { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; margin-top: 1rem; }
     .punch-row { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; transition: transform 0.2s; }
     .punch-row:hover { border-color: #cbd5e1; }
@@ -78,8 +62,6 @@
     .pi .act { font-size: 14px; font-weight: 600; }
     .delta { font-size: 13px; font-weight: 600; text-align: right; min-width: 70px; }
     .delta.early { color: var(--success); }.delta.late { color: var(--danger); }.delta.empty { color: var(--text-muted); }
-
-    /* Botões */
     .btn { padding: 8px 14px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card); cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text-main); display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
     .btn:hover { background: #f8fafc; border-color: #cbd5e1; }
     .btn-primary { background: var(--primary); color: white; border: none; justify-content: center; width: 100%; padding: 12px; font-weight: 600; margin-top: 0.5rem;}
@@ -88,25 +70,18 @@
     .punch-btn:hover { background: var(--primary-hover); }
     .icon-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 16px; padding: 6px; border-radius: 6px; }
     .icon-btn:hover { background: #fee2e2; color: var(--danger); }
-
-    /* Formulários Internos */
     .card { background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 14px; margin-bottom: 1.5rem; }
     .manual-row { display: flex; gap: 10px; align-items: flex-end; }
     .mfield { flex: 1; }
     .mfield label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
     .mfield select, .mfield input { width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: white; font-size: 14px; outline: none; }
-
-    /* Histórico e Importação */
     .hist-row { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border-color); }
     .export-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.5rem; }
     .import-area { border: 2px dashed var(--border-color); border-radius: var(--radius); padding: 20px; text-align: center; cursor: pointer; margin-bottom: 1.5rem; transition: background 0.2s; }
     .import-area:hover { background: #f1f5f9; border-color: var(--primary); }
     .import-area p { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
-    
-    /* Toast */
     .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; border-radius: 8px; padding: 10px 20px; font-size: 13px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 1000; box-shadow: var(--shadow); }
     .toast.show { opacity: 1; }
-    
     #weekend-msg { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px; text-align: center; font-size: 13px; color: #1e40af; margin-bottom: 1rem; }
   </style>
 </head>
@@ -122,7 +97,7 @@
       
       <div class="input-group">
         <label for="app-username">Usuário</label>
-        <input type="text" id="app-username" class="input-field" placeholder="Ex: admin" onkeypress="checkEnter(event)">
+        <input type="text" id="app-username" class="input-field" placeholder="Ex: Daniel" onkeypress="checkEnter(event)">
       </div>
 
       <div class="input-group">
@@ -212,9 +187,8 @@
 
 <script>
 // ================= CONFIGURAÇÃO DE SEGURANÇA CRIPTOGRAFADA =================
-const AUTH_USER = "daniel"; // Sempre checado em minúsculo internamente
-// O hash abaixo corresponde à senha "3009" em MD5 (letras estritamente minúsculas).
-const AUTH_PASS_HASH = "06905d04cbd6e71911425e408bf0bfdd"; 
+const AUTH_USER = "daniel";
+const AUTH_PASS_HASH = "06905d04cbd6e71911425e408bf0bfdd"; // MD5 exato de "3009"
 // ===========================================================================
 
 const SCHED_WEEK=['08:00','12:00','14:00','18:00'];
@@ -224,7 +198,6 @@ const MONTHS=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov',
 
 let currentDate = new Date();
 
-// --- Sistema de Autenticação ---
 function checkAuth() {
   if (sessionStorage.getItem('is_auth') === 'true') {
     document.getElementById('screen-login').classList.remove('active');
@@ -237,18 +210,24 @@ function checkAuth() {
 }
 
 function handleLogin() {
-  // Coleta os dados e transforma o usuário para minúsculo para evitar erros de digitação (Ex: Daniel vs daniel)
   const inputUser = document.getElementById('app-username').value.trim().toLowerCase();
-  const inputPass = document.getElementById('app-password').value;
+  const inputPass = document.getElementById('app-password').value.trim(); // Remove espaços acidentais da senha
   
-  // Transforma a senha digitada em MD5 (forçando formato minúsculo padrão)
+  if (!inputUser || !inputPass) {
+    toast('Preencha os campos!');
+    return;
+  }
+
+  // Geração do Hash
   const inputHash = CryptoJS.MD5(inputPass).toString().toLowerCase();
 
+  // SE FALHAR, VAI EXIBIR UM AVISO COM O QUE FOI PASSADO PARA AJUDAR NO DIAGNÓSTICO
   if (inputUser === AUTH_USER && inputHash === AUTH_PASS_HASH) {
     sessionStorage.setItem('is_auth', 'true');
     checkAuth();
-    toast('Bem-vindo de volta!');
+    toast('Bem-vindo!');
   } else {
+    alert(`Erro no login!\nUsuário digitado: "${inputUser}" (Esperado: "${AUTH_USER}")\nHash gerado da senha: "${inputHash}"\nHash esperado: "${AUTH_PASS_HASH}"`);
     toast('Usuário ou senha incorretos!');
   }
 }
@@ -264,7 +243,6 @@ function checkEnter(e) {
   if (e.key === 'Enter') handleLogin();
 }
 
-// --- Funções Principais do Rastreador ---
 function getSched(d){return d.getDay()===6?SCHED_SAT:SCHED_WEEK}
 function dateKey(d){return d.toISOString().slice(0,10)}
 function load(){try{return JSON.parse(localStorage.getItem('ot_data')||'{}')}catch{return{}}}
@@ -272,21 +250,13 @@ function save(data){localStorage.setItem('ot_data',JSON.stringify(data))}
 function parseMins(s){const[h,m]=s.split(':').map(Number);return h*60+m}
 function fmtDelta(m){m=Math.round(m);const h=Math.floor(Math.abs(m)/60),r=Math.abs(m)%60;if(h===0)return r+'min';if(r===0)return h+'h';return h+'h '+r+'min'}
 
-// Regra de cálculo baseada em Entradas (08h, 14h) e Saídas (12h, 18h)
 function getPunchDelta(exp, act) {
   const diff = parseMins(exp) - parseMins(act);
-  
-  // Se for horário de SAÍDA (12:00 ou 18:00)
-  if (exp === '12:00' || exp === '18:00') {
-    return -diff; // Inverte o sinal. Se bater DEPOIS, vira positivo (Extra).
-  }
-  
-  // Se for horário de ENTRADA (08:00 ou 14:00)
-  return diff; // Padrão: Se bater DEPOIS, continua negativo (Atraso).
+  if (exp === '12:00' || exp === '18:00') return -diff;
+  return diff;
 }
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
-
 function changeDay(dir){currentDate=new Date(currentDate);currentDate.setDate(currentDate.getDate()+dir);render()}
 
 function showTab(tab){
@@ -330,7 +300,7 @@ function render(){
       else if(d<0){late+=Math.abs(d);dHtml=`<span class="delta late">-${fmtDelta(Math.abs(d))}</span>`}
       else{dHtml=`<span class="delta" style="color:var(--text-muted)">No horário</span>`}
       actHtml=`<span class="act">${act}</span>`;
-      btn=`<button class="icon-btn" onclick="delPunch('${exp}')" aria-label="Remover batida"><i class="ti ti-trash"></i></button>`;
+      btn=`<button class="icon-btn" onclick="delPunch('${exp}')"><i class="ti ti-trash"></i></button>`;
     } else if(!isSun){
       btn=`<button class="punch-btn" onclick="registerNow('${exp}')"><i class="ti ti-fingerprint"></i></button>`;
     }
@@ -349,7 +319,6 @@ function registerNow(exp){
   if(!data[key])data[key]={};data[key][exp]=act;save(data);render();
 }
 
-// Garante o funcionamento correto do registro manual com a nova lógica
 function addManual(){
   const exp=document.getElementById('man-exp').value;
   const t=document.getElementById('man-time').value;
@@ -457,7 +426,6 @@ function clearAll(){
   localStorage.removeItem('ot_data');render();toast('Dados apagados.');
 }
 
-// Executar verificação de login inicial
 checkAuth();
 </script>
 </body>
