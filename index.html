@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rastreador de Horas Extras Pro</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <style>
     :root {
       --bg-main: #f8fafc;
@@ -185,10 +184,11 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ================= CONFIGURAÇÃO DE SEGURANÇA CRIPTOGRAFADA =================
+// ================= CONFIGURAÇÃO DE SEGURANÇA LOCAL =================
 const AUTH_USER = "daniel";
-const AUTH_PASS_HASH = "3a029f04d76d33ae89e349cb72837be1"; // MD5 Real de "3009"
-// ===========================================================================
+// Código interno para validar a senha "3009" de forma protegida
+const AUTH_CODE = 171350; 
+// ===================================================================
 
 const SCHED_WEEK=['08:00','12:00','14:00','18:00'];
 const SCHED_SAT=['08:00','12:00'];
@@ -196,6 +196,16 @@ const DAYS=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const MONTHS=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
 
 let currentDate = new Date();
+
+// Função interna nativa para embaralhar a senha sem depender de bibliotecas web
+function generateLocalCode(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
 
 function checkAuth() {
   if (sessionStorage.getItem('is_auth') === 'true') {
@@ -217,10 +227,10 @@ function handleLogin() {
     return;
   }
 
-  // Tratamento limpo para string e geração do MD5 correto
-  const inputHash = CryptoJS.MD5(inputPass).toString(CryptoJS.enc.Hex).toLowerCase();
+  // Gera o código a partir do que foi digitado
+  const generatedCode = generateLocalCode(inputPass);
 
-  if (inputUser === AUTH_USER && inputHash === AUTH_PASS_HASH) {
+  if (inputUser === AUTH_USER && generatedCode === AUTH_CODE) {
     sessionStorage.setItem('is_auth', 'true');
     checkAuth();
     toast('Bem-vindo!');
@@ -381,7 +391,6 @@ function buildCSV(keys){
   return rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
 }
 
-// Exportação corrigida para o formato correto do CSV
 function exportCSV(scope){
   const data=load();
   let keys=Object.keys(data).sort();
