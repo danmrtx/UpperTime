@@ -18,6 +18,7 @@ create table tabela_pontos (
   horario_real text not null, -- Salva a hora que você bateu
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
 Configure para edição da tabela:
 
 -- 1. Desativa a trava automática para permitir que o seu HTML converse com a tabela
