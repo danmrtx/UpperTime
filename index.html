@@ -172,7 +172,11 @@ async function carregarDadosNuvem() {
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/tabela_pontos?select=*`, {
       method: 'GET',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      headers: { 
+        'apikey': SUPABASE_KEY, 
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'x-app-key': CHAVE_URL
+      }
     });
     const linhas = await res.json();
     
@@ -194,7 +198,11 @@ async function salvarPontoNuvem(dataStr, expStr, actStr) {
   try {
     await fetch(`${SUPABASE_URL}/rest/v1/tabela_pontos?data_registro=eq.${dataStr}&horario_esperado=eq.${expStr}`, {
       method: 'DELETE',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      headers: { 
+        'apikey': SUPABASE_KEY, 
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'x-app-key': CHAVE_URL
+      }
     });
 
     if (actStr) {
@@ -204,7 +212,8 @@ async function salvarPontoNuvem(dataStr, expStr, actStr) {
           'apikey': SUPABASE_KEY, 
           'Authorization': `Bearer ${SUPABASE_KEY}`,
           'Content-Type': 'application/json',
-          'Prefer': 'return=minimal'
+          'Prefer': 'return=minimal',
+          'x-app-key': CHAVE_URL
         },
         body: JSON.stringify({ data_registro: dataStr, horario_esperado: expStr, horario_real: actStr })
       });
@@ -222,7 +231,11 @@ async function clearAllServer() {
   try {
     await fetch(`${SUPABASE_URL}/rest/v1/tabela_pontos?id=gt.0`, {
       method: 'DELETE',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      headers: { 
+        'apikey': SUPABASE_KEY, 
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'x-app-key': CHAVE_URL
+      }
     });
     toast('Todos os dados foram limpos da nuvem.');
     await carregarDadosNuvem();
