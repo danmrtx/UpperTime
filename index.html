@@ -291,7 +291,7 @@ async function handleAuth() {
       toast('E-mail de recuperação enviado! Verifique sua caixa de entrada.');
       toggleForgotMode(false);
     } else if (isSignUpMode) {
-      toast('Cadastro realizado com sucesso! Verifique seu e-mail para confirmar.');
+      toast('Cadastro realizado com sucesso! Faça seu login.');
       toggleAuthMode();
       document.getElementById('auth-password').value = '';
       document.getElementById('auth-name').value = '';
@@ -384,7 +384,7 @@ async function salvarPontoNuvem(dataStr, expStr, actStr) {
   }
 }
 
-// --- CONTROLE DE SESSÃO DIRETA E CAPTURA DE CONFIRMAÇÃO ---
+// --- CONTROLE DE SESSÃO DIRETA ---
 async function inicializarApp() {
   const hash = window.location.hash;
   if (hash && hash.includes('access_token=')) {
@@ -405,7 +405,6 @@ async function inicializarApp() {
         headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${savedToken}` }
       });
       
-      // Se a resposta for válida, conecta
       if (userRes.ok) {
         usuarioLogado = await userRes.json();
         document.getElementById('auth-screen').style.display = 'none';
@@ -413,7 +412,6 @@ async function inicializarApp() {
         carregarDadosNuvem();
         return;
       } else {
-        // Se o servidor recusar o token (Ex: Erro 403), remove o lixo da memória
         localStorage.removeItem('session_access_token');
       }
     } catch (e) {
@@ -423,7 +421,6 @@ async function inicializarApp() {
     }
   }
   
-  // Exibe a tela de login limpa de forma limpa caso o token falhe ou não exista
   document.getElementById('auth-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
 }
