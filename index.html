@@ -86,7 +86,7 @@
       <input type="text" id="auth-name" placeholder="Seu Nome">
     </div>
 
-    <div class="mfield">
+    <div class="mfield" id="auth-email-field">
       <label>E-mail</label>
       <input type="email" id="auth-email" placeholder="seu@email.com">
     </div>
@@ -233,7 +233,7 @@ let currentDate = new Date();
 let cacheDadosNuvem = {};
 let isSignUpMode = false;
 let isForgotMode = false;
-let isResetMode = false; // Modo ativado após clicar no e-mail de recuperação
+let isResetMode = false;
 let usuarioLogado = null;
 
 function showLoading(v){ document.getElementById('loading').style.display = v ? 'flex' : 'none'; }
@@ -250,6 +250,7 @@ function toggleAuthMode() {
   document.getElementById('auth-switch-link').textContent = isSignUpMode ? 'Faça Login' : 'Cadastre-se';
   
   document.getElementById('auth-name-field').style.display = isSignUpMode ? 'block' : 'none';
+  document.getElementById('auth-email-field').style.display = 'block';
   document.getElementById('auth-password-field').style.display = 'block';
   document.getElementById('auth-confirm-password-field').style.display = isSignUpMode ? 'block' : 'none';
   document.getElementById('auth-forgot-container').style.display = isSignUpMode ? 'none' : 'block';
@@ -267,6 +268,7 @@ function toggleForgotMode(active) {
   document.getElementById('btn-auth-primary').textContent = active ? 'Enviar E-mail' : 'Entrar';
   
   document.getElementById('auth-name-field').style.display = 'none';
+  document.getElementById('auth-email-field').style.display = 'block';
   document.getElementById('auth-password-field').style.display = active ? 'none' : 'block';
   document.getElementById('auth-confirm-password-field').style.display = 'none';
   document.getElementById('auth-forgot-container').style.display = active ? 'none' : 'block';
@@ -285,6 +287,7 @@ function toggleResetMode() {
   document.getElementById('label-password').textContent = 'Nova Senha';
   
   document.getElementById('auth-name-field').style.display = 'none';
+  document.getElementById('auth-email-field').style.display = 'none';
   document.getElementById('auth-password-field').style.display = 'block';
   document.getElementById('auth-confirm-password-field').style.display = 'block';
   document.getElementById('auth-forgot-container').style.display = 'none';
@@ -302,6 +305,7 @@ function cancelSpecialModes() {
   document.getElementById('btn-auth-primary').textContent = 'Entrar';
   
   document.getElementById('auth-name-field').style.display = 'none';
+  document.getElementById('auth-email-field').style.display = 'block';
   document.getElementById('auth-password-field').style.display = 'block';
   document.getElementById('auth-confirm-password-field').style.display = 'none';
   document.getElementById('auth-forgot-container').style.display = 'block';
@@ -321,14 +325,12 @@ async function handleAuth() {
   const confirmPassword = document.getElementById('auth-confirm-password').value;
   const name = document.getElementById('auth-name').value.trim();
 
-  // 1. Validações básicas de campos
   if (!email && !isResetMode) { toast('Por favor, informe seu e-mail.'); return; }
   if (!isForgotMode && !password) { toast('Por favor, informe a senha.'); return; }
   if (isSignUpMode && !name) { toast('Por favor, informe o seu nome.'); return; }
 
-  // 2. Validação cruzada de confirmação de senha (para Cadastro ou Alteração de senha)
   if ((isSignUpMode || isResetMode) && password !== confirmPassword) {
-    toast('As senhas digitadas não são iguais! Reintroduza.');
+    toast('As senhas digitadas não são iguais! Verifique a confirmação.');
     return;
   }
 
@@ -344,7 +346,7 @@ async function handleAuth() {
     payload = { email, password, options: { data: { full_name: name } } };
   } else if (isForgotMode) {
     urlEndpoint = `${SUPABASE_URL}/auth/v1/recover`;
-    payload = { email };
+    payload = { email, options: { redirectTo: window.location.origin + window.location.pathname } };
   } else if (isResetMode) {
     urlEndpoint = `${SUPABASE_URL}/auth/v1/user`;
     method = 'PUT';
@@ -365,14 +367,13 @@ async function handleAuth() {
     const dados = await res.json();
     
     if (!res.ok) {
-      // Tradução inteligente e direta de erros do Supabase para o usuário
-      const msgErro = dados.msg || dados.error_description || '';
-      if (msgErro.includes('Invalid login credentials')) {
-        throw new Error('A senha ou e-mail que colocou para fazer login estão errados.');
-      } else if (msgErro.includes('User already registered')) {
+      const erroTexto = dados.error_description || dados.msg || dados.error || '';
+      if (erroTexto.includes('Invalid login credentials') || res.status === 400 && !isSignUpMode && !isForgotMode) {
+        throw new Error('A senha ou e-mail que botou para fazer login estão errados.');
+      } else if (erroTexto.includes('User already registered') || erroTexto.includes('already exists')) {
         throw new Error('O e-mail que você está tentando cadastrar já possui uma conta.');
       } else {
-        throw new Error(msgErro || 'Erro ao processar a operação.');
+        throw new Error(erroTexto || 'Não foi possível processar. Tente novamente.');
       }
     }
 
@@ -380,7 +381,7 @@ async function handleAuth() {
       toast('E-mail de recuperação enviado! Verifique sua caixa de entrada.');
       cancelSpecialModes();
     } else if (isResetMode) {
-      toast('Sua senha foi atualizada com sucesso! Faça login.');
+      toast('Sua senha foi redefinida com sucesso!');
       cancelSpecialModes();
     } else if (isSignUpMode) {
       toast('Conta criada com sucesso! Você já pode fazer login.');
@@ -451,7 +452,7 @@ async function salvarPontoNuvem(dataStr, expStr, actStr) {
   }
 }
 
-// --- CONTROLE DE SESSÃO DIRETA E CAPTURA DE CONFIRMAÇÃO ---
+// --- CONTROLE DE SESSÃO DIRETA ---
 async function inicializarApp() {
   let hash = window.location.hash || '';
   let search = window.location.search || '';
@@ -459,14 +460,19 @@ async function inicializarApp() {
   const urlParams = new URLSearchParams(urlParamsStr);
   
   let tokenDoEmail = urlParams.get('access_token');
-  let tipoLink = urlParams.get('type'); // Identifica se veio de recuperação ('recovery')
+  let tipoLink = urlParams.get('type');
+  let errorDesc = urlParams.get('error_description');
+
+  if (errorDesc) {
+    toast('O link de recuperação expirou. Por favor, solicite um novo.');
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
 
   if (tokenDoEmail) {
     localStorage.setItem('session_access_token', tokenDoEmail);
     window.history.replaceState({}, document.title, window.location.pathname);
     
     if (tipoLink === 'recovery') {
-      // Força a exibição da tela para o usuário definir sua nova senha
       document.getElementById('auth-screen').style.display = 'flex';
       document.getElementById('app').style.display = 'none';
       toggleResetMode();
