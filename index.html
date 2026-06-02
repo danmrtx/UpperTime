@@ -404,12 +404,17 @@ async function inicializarApp() {
         method: 'GET',
         headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${savedToken}` }
       });
+      
+      // Se a resposta for válida, conecta
       if (userRes.ok) {
         usuarioLogado = await userRes.json();
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('app').style.display = 'block';
         carregarDadosNuvem();
         return;
+      } else {
+        // Se o servidor recusar o token (Ex: Erro 403), remove o lixo da memória
+        localStorage.removeItem('session_access_token');
       }
     } catch (e) {
       localStorage.removeItem('session_access_token');
@@ -418,6 +423,7 @@ async function inicializarApp() {
     }
   }
   
+  // Exibe a tela de login limpa de forma limpa caso o token falhe ou não exista
   document.getElementById('auth-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
 }
