@@ -80,6 +80,12 @@
 <div id="auth-screen" style="display: none;">
   <div class="auth-card">
     <h2 id="auth-title">Entrar no Sistema</h2>
+    
+    <div class="mfield" id="auth-name-field" style="display: none; margin-bottom: 12px;">
+      <label>Nome Completo</label>
+      <input type="text" id="auth-name" placeholder="Seu Nome">
+    </div>
+
     <div class="mfield">
       <label>E-mail</label>
       <input type="email" id="auth-email" placeholder="seu@email.com">
@@ -221,34 +227,45 @@ function toggleAuthMode() {
   document.getElementById('btn-auth-primary').textContent = isSignUpMode ? 'Cadastrar' : 'Entrar';
   document.getElementById('auth-switch-text').textContent = isSignUpMode ? 'Já tem uma conta?' : 'Não tem uma conta?';
   document.getElementById('auth-switch-link').textContent = isSignUpMode ? 'Faça Login' : 'Cadastre-se';
+  
+  // Mostra ou oculta dinamicamente o campo Nome dependendo do modo
+  document.getElementById('auth-name-field').style.display = isSignUpMode ? 'block' : 'none';
 }
 
 async function handleAuth() {
   const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
+  const name = document.getElementById('auth-name').value.trim();
 
-  if (!email || !password) {
-    toast('Preencha todos os campos.');
+  if (!email || !password || (isSignUpMode && !name)) {
+    toast('Preencha todos os campos obrigatórios.');
     return;
   }
 
   showLoading(true);
   const urlEndpoint = isSignUpMode ? `${SUPABASE_URL}/auth/v1/signup` : `${SUPABASE_URL}/auth/v1/token?grant_type=password`;
 
+  // Prepara os dados para envio. Se for cadastro, inclui o nome no user_metadata (options.data)
+  const payload = { email, password };
+  if (isSignUpMode) {
+    payload.options = { data: { full_name: name } };
+  }
+
   try {
     const res = await fetch(urlEndpoint, {
       method: 'POST',
       headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify(payload)
     });
 
     const dados = await res.json();
     if (!res.ok) throw new Error(dados.error_description || dados.msg || 'Erro na operação.');
 
     if (isSignUpMode) {
-      toast('Cadastro realizado com sucesso! Faça seu login.');
+      toast('Cadastro realizado com sucesso! Verifique seu e-mail para confirmar.');
       toggleAuthMode();
       document.getElementById('auth-password').value = '';
+      document.getElementById('auth-name').value = '';
     } else {
       usuarioLogado = dados.user;
       localStorage.setItem('session_access_token', dados.access_token);
@@ -268,6 +285,7 @@ function logout() {
   usuarioLogado = null;
   cacheDadosNuvem = {};
   document.getElementById('auth-password').value = '';
+  document.getElementById('auth-name').value = '';
   document.getElementById('auth-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
   toast('Você saiu do sistema.');
@@ -337,8 +355,18 @@ async function salvarPontoNuvem(dataStr, expStr, actStr) {
   }
 }
 
-// --- CONTROLE DE SESSÃO DIRETA ---
+// --- CONTROLE DE SESSÃO DIRETA E CAPTURA DE CONFIRMAÇÃO ---
 async function inicializarApp() {
+  const hash = window.location.hash;
+  if (hash && hash.includes('access_token=')) {
+    const params = new URLSearchParams(hash.replace('#', '?'));
+    const tokenDoEmail = params.get('access_token');
+    if (tokenDoEmail) {
+      localStorage.setItem('session_access_token', tokenDoEmail);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }
+
   const savedToken = localStorage.getItem('session_access_token');
   if (savedToken) {
     showLoading(true);
@@ -361,7 +389,6 @@ async function inicializarApp() {
     }
   }
   
-  // Caso não esteja logado, exibe diretamente a tela de login
   document.getElementById('auth-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
 }
