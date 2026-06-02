@@ -92,11 +92,12 @@
     </div>
     
     <div class="mfield" id="auth-password-field" style="margin-top: 12px;">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <label>Senha</label>
-        <a href="#" id="auth-forgot-link" onclick="toggleForgotMode(true)" style="font-size: 11px; color: var(--primary); text-decoration: none; font-weight: 600; margin-bottom: 4px;">Esqueci minha senha</a>
-      </div>
+      <label>Senha</label>
       <input type="password" id="auth-password" placeholder="••••••••">
+      
+      <div style="text-align: right; margin-top: 6px;">
+        <a href="#" id="auth-forgot-link" onclick="toggleForgotMode(true)" style="font-size: 12px; color: var(--primary); text-decoration: none; font-weight: 600;">Esqueci minha senha</a>
+      </div>
     </div>
     
     <button class="punch-btn" id="btn-auth-primary" onclick="handleAuth()" style="width: 100%; margin-top: 1.5rem; padding: 10px; font-weight: 600; border-radius: 8px;">Entrar</button>
@@ -268,7 +269,6 @@ async function handleAuth() {
 
   showLoading(true);
 
-  // Define a rota do endpoint baseado no modo da tela
   let urlEndpoint = `${SUPABASE_URL}/auth/v1/token?grant_type=password`;
   if (isSignUpMode) urlEndpoint = `${SUPABASE_URL}/auth/v1/signup`;
   if (isForgotMode) urlEndpoint = `${SUPABASE_URL}/auth/v1/recover`;
