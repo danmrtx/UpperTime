@@ -93,6 +93,7 @@
     <div class="tab-bar">
       <button class="tab active" onclick="showTab('today')" id="tab-today">Hoje</button>
       <button class="tab" onclick="showTab('history')" id="tab-history">Histórico</button>
+      <button class="tab" onclick="showTab('period')" id="tab-period">Período</button>
       <button class="tab" onclick="showTab('summary')" id="tab-summary">Resumo</button>
       <button class="tab" onclick="showTab('data')" id="tab-data">Dados</button>
     </div>
@@ -124,6 +125,29 @@
     <div id="view-history" class="tab-view" style="display:none">
       <div class="sec-title">Últimos 60 registros</div>
       <div id="hist-list"></div>
+    </div>
+
+    <div id="view-period" class="tab-view" style="display:none">
+      <div class="card">
+        <div class="manual-row">
+          <div class="mfield">
+            <label>Data Inicial</label>
+            <input type="date" id="p-start-date" onchange="renderPeriod()"/>
+          </div>
+          <div class="mfield">
+            <label>Data Final</label>
+            <input type="date" id="p-end-date" onchange="renderPeriod()"/>
+          </div>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="stat"><div class="stat-lbl">Extras no período</div><div class="stat-val pos" id="p-early">0min</div></div>
+        <div class="stat"><div class="stat-lbl">Atrasos no período</div><div class="stat-val neg" id="p-late">0min</div></div>
+      </div>
+      <div class="grid2">
+        <div class="stat"><div class="stat-lbl">Saldo do período</div><div class="stat-val" id="p-bal">0min</div></div>
+        <div class="stat"><div class="stat-lbl">Dias registrados</div><div class="stat-val" id="p-days">0</div></div>
+      </div>
     </div>
 
     <div id="view-summary" class="tab-view" style="display:none">
@@ -186,6 +210,7 @@ async function carregarDadosNuvem() {
       cacheDadosNuvem[item.data_registro][item.horario_esperado] = item.horario_real;
     });
     render();
+    if(document.getElementById('tab-period').classList.contains('active')) renderPeriod();
   } catch(e) {
     toast('Erro ao sincronizar dados da nuvem.');
   } finally {
@@ -275,11 +300,21 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 function changeDay(dir){currentDate=new Date(currentDate);currentDate.setDate(currentDate.getDate()+dir);render()}
 
 function showTab(tab){
-  ['today','history','summary','data'].forEach(t=>{
+  ['today','history','period','summary','data'].forEach(t=>{
     document.getElementById('view-'+t).style.display=t===tab?'':'none';
     document.getElementById('tab-'+t).classList.toggle('active',t===tab);
   });
   if(tab==='history')renderHistory();
+  if(tab==='period') {
+    const hoje = new Date();
+    if(!document.getElementById('p-start-date').value) {
+      document.getElementById('p-start-date').value = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0,10);
+    }
+    if(!document.getElementById('p-end-date').value) {
+      document.getElementById('p-end-date').value = hoje.toISOString().slice(0,10);
+    }
+    renderPeriod();
+  }
   if(tab==='summary')renderSummary();
 }
 
@@ -360,6 +395,41 @@ function renderHistory(){
     html+=`<div class="hist-row"><div style="min-width:95px"><div style="font-size:13px;font-weight:600;">${DAYS[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}</div><div style="font-size:11px;color:var(--text-muted)">${pList}</div></div><div style="flex:1"></div><div class="stat-val ${bCls}" style="font-size:14px">${bal>=0?'+':''}${fmtDelta(bal)}</div></div>`;
   });
   document.getElementById('hist-list').innerHTML=html;
+}
+
+function renderPeriod(){
+  const startVal = document.getElementById('p-start-date').value;
+  const endVal = document.getElementById('p-end-date').value;
+  
+  if(!startVal || !endVal) return;
+
+  const dStart = new Date(startVal + 'T00:00:00');
+  const dEnd = new Date(endVal + 'T23:59:59');
+
+  let early=0, late=0, days=0;
+
+  Object.keys(cacheDadosNuvem).forEach(k=>{
+    const d=new Date(k+'T12:00:00');
+    if(d < dStart || d > dEnd) return;
+
+    days++;
+    const sched=getSched(d);
+    const punches=cacheDadosNuvem[k];
+    sched.forEach(exp=>{
+      if(punches[exp]){
+        const dv = getPunchDelta(exp,punches[exp]);
+        if(dv>0) early+=dv;
+        else late+=Math.abs(dv);
+      }
+    });
+  });
+
+  const bal=early-late;
+  document.getElementById('p-early').textContent=fmtDelta(early);
+  document.getElementById('p-late').textContent=fmtDelta(late);
+  document.getElementById('p-bal').textContent=(bal>=0?'+':'-')+fmtDelta(Math.abs(bal));
+  document.getElementById('p-bal').className='stat-val '+(bal>=0?'pos':'neg');
+  document.getElementById('p-days').textContent=days;
 }
 
 function renderSummary(){
