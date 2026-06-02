@@ -92,12 +92,17 @@
     </div>
     
     <div class="mfield" id="auth-password-field" style="margin-top: 12px;">
-      <label>Senha</label>
+      <label id="label-password">Senha</label>
       <input type="password" id="auth-password" placeholder="••••••••">
-      
-      <div style="text-align: right; margin-top: 6px;">
-        <a href="#" id="auth-forgot-link" onclick="toggleForgotMode(true)" style="font-size: 12px; color: var(--primary); text-decoration: none; font-weight: 600;">Esqueci minha senha</a>
-      </div>
+    </div>
+
+    <div class="mfield" id="auth-confirm-password-field" style="margin-top: 12px; display: none;">
+      <label>Confirmar Senha</label>
+      <input type="password" id="auth-confirm-password" placeholder="••••••••">
+    </div>
+
+    <div style="text-align: right; margin-top: 6px;" id="auth-forgot-container">
+      <a href="#" id="auth-forgot-link" onclick="toggleForgotMode(true)" style="font-size: 12px; color: var(--primary); text-decoration: none; font-weight: 600;">Esqueci minha senha</a>
     </div>
     
     <button class="punch-btn" id="btn-auth-primary" onclick="handleAuth()" style="width: 100%; margin-top: 1.5rem; padding: 10px; font-weight: 600; border-radius: 8px;">Entrar</button>
@@ -108,7 +113,7 @@
     </p>
 
     <p style="text-align: center; margin-top: 1.2rem; font-size: 13px; display: none;" id="auth-back-login-container">
-      <a href="#" onclick="toggleForgotMode(false)" style="color: var(--text-muted); font-weight: 600; text-decoration: none;"><i class="ti ti-arrow-back-up"></i> Voltar para o Login</a>
+      <a href="#" onclick="cancelSpecialModes()" style="color: var(--text-muted); font-weight: 600; text-decoration: none;"><i class="ti ti-arrow-back-up"></i> Voltar para o Login</a>
     </p>
   </div>
 </div>
@@ -228,106 +233,172 @@ let currentDate = new Date();
 let cacheDadosNuvem = {};
 let isSignUpMode = false;
 let isForgotMode = false;
+let isResetMode = false; // Modo ativado após clicar no e-mail de recuperação
 let usuarioLogado = null;
 
 function showLoading(v){ document.getElementById('loading').style.display = v ? 'flex' : 'none'; }
 
 // --- SISTEMA DE AUTENTICAÇÃO ---
 function toggleAuthMode() {
-  if(isForgotMode) toggleForgotMode(false);
   isSignUpMode = !isSignUpMode;
+  isForgotMode = false;
+  isResetMode = false;
+  
   document.getElementById('auth-title').textContent = isSignUpMode ? 'Criar Nova Conta' : 'Entrar no Sistema';
   document.getElementById('btn-auth-primary').textContent = isSignUpMode ? 'Cadastrar' : 'Entrar';
   document.getElementById('auth-switch-text').textContent = isSignUpMode ? 'Já tem uma conta?' : 'Não tem uma conta?';
   document.getElementById('auth-switch-link').textContent = isSignUpMode ? 'Faça Login' : 'Cadastre-se';
+  
   document.getElementById('auth-name-field').style.display = isSignUpMode ? 'block' : 'none';
-  document.getElementById('auth-forgot-link').style.display = isSignUpMode ? 'none' : 'block';
+  document.getElementById('auth-password-field').style.display = 'block';
+  document.getElementById('auth-confirm-password-field').style.display = isSignUpMode ? 'block' : 'none';
+  document.getElementById('auth-forgot-container').style.display = isSignUpMode ? 'none' : 'block';
+  document.getElementById('auth-toggle-container').style.display = 'block';
+  document.getElementById('auth-back-login-container').style.display = isSignUpMode ? 'block' : 'none';
+  limparCamposAuth();
 }
 
 function toggleForgotMode(active) {
   isForgotMode = active;
   isSignUpMode = false;
+  isResetMode = false;
   
   document.getElementById('auth-title').textContent = active ? 'Recuperar Senha' : 'Entrar no Sistema';
-  document.getElementById('btn-auth-primary').textContent = active ? 'Enviar E-mail de Recuperação' : 'Entrar';
+  document.getElementById('btn-auth-primary').textContent = active ? 'Enviar E-mail' : 'Entrar';
   
   document.getElementById('auth-name-field').style.display = 'none';
   document.getElementById('auth-password-field').style.display = active ? 'none' : 'block';
+  document.getElementById('auth-confirm-password-field').style.display = 'none';
+  document.getElementById('auth-forgot-container').style.display = active ? 'none' : 'block';
   document.getElementById('auth-toggle-container').style.display = active ? 'none' : 'block';
   document.getElementById('auth-back-login-container').style.display = active ? 'block' : 'none';
+  limparCamposAuth();
+}
+
+function toggleResetMode() {
+  isResetMode = true;
+  isSignUpMode = false;
+  isForgotMode = false;
+
+  document.getElementById('auth-title').textContent = 'Definir Nova Senha';
+  document.getElementById('btn-auth-primary').textContent = 'Salvar Nova Senha';
+  document.getElementById('label-password').textContent = 'Nova Senha';
+  
+  document.getElementById('auth-name-field').style.display = 'none';
+  document.getElementById('auth-password-field').style.display = 'block';
+  document.getElementById('auth-confirm-password-field').style.display = 'block';
+  document.getElementById('auth-forgot-container').style.display = 'none';
+  document.getElementById('auth-toggle-container').style.display = 'none';
+  document.getElementById('auth-back-login-container').style.display = 'block';
+  limparCamposAuth();
+}
+
+function cancelSpecialModes() {
+  isSignUpMode = false;
+  isForgotMode = false;
+  isResetMode = false;
+  document.getElementById('label-password').textContent = 'Senha';
+  document.getElementById('auth-title').textContent = 'Entrar no Sistema';
+  document.getElementById('btn-auth-primary').textContent = 'Entrar';
+  
+  document.getElementById('auth-name-field').style.display = 'none';
+  document.getElementById('auth-password-field').style.display = 'block';
+  document.getElementById('auth-confirm-password-field').style.display = 'none';
+  document.getElementById('auth-forgot-container').style.display = 'block';
+  document.getElementById('auth-toggle-container').style.display = 'block';
+  document.getElementById('auth-back-login-container').style.display = 'none';
+  limparCamposAuth();
+}
+
+function limparCamposAuth() {
+  document.getElementById('auth-password').value = '';
+  document.getElementById('auth-confirm-password').value = '';
 }
 
 async function handleAuth() {
   const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
+  const confirmPassword = document.getElementById('auth-confirm-password').value;
   const name = document.getElementById('auth-name').value.trim();
 
-  if (!email || (!isForgotMode && !password) || (isSignUpMode && !name)) {
-    toast('Preencha todos os campos obrigatórios.');
+  // 1. Validações básicas de campos
+  if (!email && !isResetMode) { toast('Por favor, informe seu e-mail.'); return; }
+  if (!isForgotMode && !password) { toast('Por favor, informe a senha.'); return; }
+  if (isSignUpMode && !name) { toast('Por favor, informe o seu nome.'); return; }
+
+  // 2. Validação cruzada de confirmação de senha (para Cadastro ou Alteração de senha)
+  if ((isSignUpMode || isResetMode) && password !== confirmPassword) {
+    toast('As senhas digitadas não são iguais! Reintroduza.');
     return;
   }
 
   showLoading(true);
 
   let urlEndpoint = `${SUPABASE_URL}/auth/v1/token?grant_type=password`;
-  if (isSignUpMode) urlEndpoint = `${SUPABASE_URL}/auth/v1/signup`;
-  if (isForgotMode) urlEndpoint = `${SUPABASE_URL}/auth/v1/recover`;
+  let method = 'POST';
+  let headers = { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' };
+  let payload = {};
 
-  const payload = { email };
-  if (!isForgotMode) payload.password = password;
-  if (isSignUpMode) payload.options = { data: { full_name: name } };
+  if (isSignUpMode) {
+    urlEndpoint = `${SUPABASE_URL}/auth/v1/signup`;
+    payload = { email, password, options: { data: { full_name: name } } };
+  } else if (isForgotMode) {
+    urlEndpoint = `${SUPABASE_URL}/auth/v1/recover`;
+    payload = { email };
+  } else if (isResetMode) {
+    urlEndpoint = `${SUPABASE_URL}/auth/v1/user`;
+    method = 'PUT';
+    const token = localStorage.getItem('session_access_token');
+    headers['Authorization'] = `Bearer ${token}`;
+    payload = { password };
+  } else {
+    payload = { email, password };
+  }
 
   try {
     const res = await fetch(urlEndpoint, {
-      method: 'POST',
-      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      method: method,
+      headers: headers,
       body: JSON.stringify(payload)
     });
 
     const dados = await res.json();
-    if (!res.ok) throw new Error(dados.error_description || dados.msg || 'Erro na operação.');
+    
+    if (!res.ok) {
+      // Tradução inteligente e direta de erros do Supabase para o usuário
+      const msgErro = dados.msg || dados.error_description || '';
+      if (msgErro.includes('Invalid login credentials')) {
+        throw new Error('A senha ou e-mail que colocou para fazer login estão errados.');
+      } else if (msgErro.includes('User already registered')) {
+        throw new Error('O e-mail que você está tentando cadastrar já possui uma conta.');
+      } else {
+        throw new Error(msgErro || 'Erro ao processar a operação.');
+      }
+    }
 
     if (isForgotMode) {
       toast('E-mail de recuperação enviado! Verifique sua caixa de entrada.');
-      toggleForgotMode(false);
+      cancelSpecialModes();
+    } else if (isResetMode) {
+      toast('Sua senha foi atualizada com sucesso! Faça login.');
+      cancelSpecialModes();
     } else if (isSignUpMode) {
-      // Login imediato após o cadastro se as configurações de confirmação de e-mail permitirem autologin
-      if (dados.access_token) {
-        usuarioLogado = dados.user;
-        localStorage.setItem('session_access_token', dados.access_token);
-        document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
-        carregarDadosNuvem();
-        toast('Conta criada com sucesso!');
-      } else {
-        toast('Cadastro realizado! Faça login com suas credenciais.');
-        toggleAuthMode();
-      }
-      document.getElementById('auth-password').value = '';
-      document.getElementById('auth-name').value = '';
+      toast('Conta criada com sucesso! Você já pode fazer login.');
+      cancelSpecialModes();
+      document.getElementById('auth-email').value = email;
     } else {
       usuarioLogado = dados.user;
       localStorage.setItem('session_access_token', dados.access_token);
       document.getElementById('auth-screen').style.display = 'none';
       document.getElementById('app').style.display = 'block';
       carregarDadosNuvem();
+      toast('Login bem-sucedido!');
     }
   } catch (e) {
     toast(e.message);
   } finally {
     showLoading(false);
   }
-}
-
-function logout() {
-  localStorage.removeItem('session_access_token');
-  usuarioLogado = null;
-  cacheDadosNuvem = {};
-  document.getElementById('auth-password').value = '';
-  document.getElementById('auth-name').value = '';
-  document.getElementById('auth-screen').style.display = 'flex';
-  document.getElementById('app').style.display = 'none';
-  toast('Você saiu do sistema.');
 }
 
 // --- CONEXÃO COM O SUPABASE ---
@@ -338,11 +409,7 @@ async function carregarDadosNuvem() {
     const token = localStorage.getItem('session_access_token');
     const res = await fetch(`${SUPABASE_URL}/rest/v1/tabela_pontos?user_id=eq.${usuarioLogado.id}&select=*`, {
       method: 'GET',
-      headers: { 
-        'apikey': SUPABASE_KEY, 
-        'Authorization': `Bearer ${token}`,
-        'x-app-key': CHAVE_URL
-      }
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}`, 'x-app-key': CHAVE_URL }
     });
     const linhas = await res.json();
     
@@ -367,23 +434,13 @@ async function salvarPontoNuvem(dataStr, expStr, actStr) {
   try {
     await fetch(`${SUPABASE_URL}/rest/v1/tabela_pontos?user_id=eq.${usuarioLogado.id}&data_registro=eq.${dataStr}&horario_esperado=eq.${expStr}`, {
       method: 'DELETE',
-      headers: { 
-        'apikey': SUPABASE_KEY, 
-        'Authorization': `Bearer ${token}`,
-        'x-app-key': CHAVE_URL
-      }
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}`, 'x-app-key': CHAVE_URL }
     });
 
     if (actStr) {
       await fetch(`${SUPABASE_URL}/rest/v1/tabela_pontos`, {
         method: 'POST',
-        headers: { 
-          'apikey': SUPABASE_KEY, 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal',
-          'x-app-key': CHAVE_URL
-        },
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal', 'x-app-key': CHAVE_URL },
         body: JSON.stringify({ data_registro: dataStr, horario_esperado: expStr, horario_real: actStr, user_id: usuarioLogado.id })
       });
     }
@@ -394,15 +451,26 @@ async function salvarPontoNuvem(dataStr, expStr, actStr) {
   }
 }
 
-// --- CONTROLE DE SESSÃO DIRETA ---
+// --- CONTROLE DE SESSÃO DIRETA E CAPTURA DE CONFIRMAÇÃO ---
 async function inicializarApp() {
-  const hash = window.location.hash;
-  if (hash && hash.includes('access_token=')) {
-    const params = new URLSearchParams(hash.replace('#', '?'));
-    const tokenDoEmail = params.get('access_token');
-    if (tokenDoEmail) {
-      localStorage.setItem('session_access_token', tokenDoEmail);
-      window.history.replaceState({}, document.title, window.location.pathname);
+  let hash = window.location.hash || '';
+  let search = window.location.search || '';
+  let urlParamsStr = hash.startsWith('#') ? hash.replace('#', '?') : search;
+  const urlParams = new URLSearchParams(urlParamsStr);
+  
+  let tokenDoEmail = urlParams.get('access_token');
+  let tipoLink = urlParams.get('type'); // Identifica se veio de recuperação ('recovery')
+
+  if (tokenDoEmail) {
+    localStorage.setItem('session_access_token', tokenDoEmail);
+    window.history.replaceState({}, document.title, window.location.pathname);
+    
+    if (tipoLink === 'recovery') {
+      // Força a exibição da tela para o usuário definir sua nova senha
+      document.getElementById('auth-screen').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
+      toggleResetMode();
+      return;
     }
   }
 
@@ -435,6 +503,14 @@ async function inicializarApp() {
   document.getElementById('app').style.display = 'none';
 }
 
+function logout() {
+  localStorage.removeItem('session_access_token');
+  usuarioLogado = null;
+  cacheDadosNuvem = {};
+  cancelSpecialModes();
+  toast('Você saiu do sistema.');
+}
+
 function getSched(d){return d.getDay()===6?SCHED_SAT:SCHED_WEEK}
 function dateKey(d){return d.toISOString().slice(0,10)}
 function parseMins(s){const[h,m]=s.split(':').map(Number);return h*60+m}
@@ -446,7 +522,7 @@ function getPunchDelta(exp, act) {
   return diff;
 }
 
-function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000)}
 function changeDay(dir){currentDate=new Date(currentDate);currentDate.setDate(currentDate.getDate()+dir);render()}
 
 function showTab(tab){
