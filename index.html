@@ -368,6 +368,8 @@ async function handleAuth() {
     
     if (!res.ok) {
       const erroTexto = dados.error_description || dados.msg || dados.error || '';
+      
+      // Validações e traduções exatas exigidas
       if (erroTexto.includes('Invalid login credentials') || res.status === 400 && !isSignUpMode && !isForgotMode) {
         throw new Error('A senha ou e-mail que botou para fazer login estão errados.');
       } else if (erroTexto.includes('User already registered') || erroTexto.includes('already exists')) {
@@ -701,7 +703,7 @@ function buildCSV(keys){
       rows.push([k,DAYS[d.getDay()],exp,act,diff,tipo]);
     });
   });
-  return rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  return rows.map(r=>r.map(c=>`\"${String(c).replace(/\"/g,'\"\"')}\"`).join(',')).join('\\r\\n');
 }
 
 function exportCSV(scope){
