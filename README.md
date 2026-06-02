@@ -17,10 +17,3 @@ create table tabela_pontos (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
-Configure para edição da tabela:
-
--- 1. Desativa a trava automática para permitir que o seu HTML converse com a tabela
-alter table tabela_pontos disable row level security;
--- 2. Concede todas as permissões para a chave pública (anon) ler e gravar dados
-grant all on table tabela_pontos to anon;
-
