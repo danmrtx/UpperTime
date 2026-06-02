@@ -90,14 +90,24 @@
       <label>E-mail</label>
       <input type="email" id="auth-email" placeholder="seu@email.com">
     </div>
-    <div class="mfield" style="margin-top: 12px;">
-      <label>Senha</label>
+    
+    <div class="mfield" id="auth-password-field" style="margin-top: 12px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <label>Senha</label>
+        <a href="#" id="auth-forgot-link" onclick="toggleForgotMode(true)" style="font-size: 11px; color: var(--primary); text-decoration: none; font-weight: 600; margin-bottom: 4px;">Esqueci minha senha</a>
+      </div>
       <input type="password" id="auth-password" placeholder="••••••••">
     </div>
+    
     <button class="punch-btn" id="btn-auth-primary" onclick="handleAuth()" style="width: 100%; margin-top: 1.5rem; padding: 10px; font-weight: 600; border-radius: 8px;">Entrar</button>
-    <p style="text-align: center; margin-top: 1.2rem; font-size: 13px; color: var(--text-muted);">
+    
+    <p style="text-align: center; margin-top: 1.2rem; font-size: 13px; color: var(--text-muted);" id="auth-toggle-container">
       <span id="auth-switch-text">Não tem uma conta?</span> 
       <a href="#" id="auth-switch-link" onclick="toggleAuthMode()" style="color: var(--primary); font-weight: 600; text-decoration: none;">Cadastre-se</a>
+    </p>
+
+    <p style="text-align: center; margin-top: 1.2rem; font-size: 13px; display: none;" id="auth-back-login-container">
+      <a href="#" onclick="toggleForgotMode(false)" style="color: var(--text-muted); font-weight: 600; text-decoration: none;"><i class="ti ti-arrow-back-up"></i> Voltar para o Login</a>
     </p>
   </div>
 </div>
@@ -216,20 +226,34 @@ const MONTHS=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov',
 let currentDate = new Date();
 let cacheDadosNuvem = {};
 let isSignUpMode = false;
+let isForgotMode = false;
 let usuarioLogado = null;
 
 function showLoading(v){ document.getElementById('loading').style.display = v ? 'flex' : 'none'; }
 
 // --- SISTEMA DE AUTENTICAÇÃO ---
 function toggleAuthMode() {
+  if(isForgotMode) toggleForgotMode(false);
   isSignUpMode = !isSignUpMode;
   document.getElementById('auth-title').textContent = isSignUpMode ? 'Criar Nova Conta' : 'Entrar no Sistema';
   document.getElementById('btn-auth-primary').textContent = isSignUpMode ? 'Cadastrar' : 'Entrar';
   document.getElementById('auth-switch-text').textContent = isSignUpMode ? 'Já tem uma conta?' : 'Não tem uma conta?';
   document.getElementById('auth-switch-link').textContent = isSignUpMode ? 'Faça Login' : 'Cadastre-se';
-  
-  // Mostra ou oculta dinamicamente o campo Nome dependendo do modo
   document.getElementById('auth-name-field').style.display = isSignUpMode ? 'block' : 'none';
+  document.getElementById('auth-forgot-link').style.display = isSignUpMode ? 'none' : 'block';
+}
+
+function toggleForgotMode(active) {
+  isForgotMode = active;
+  isSignUpMode = false;
+  
+  document.getElementById('auth-title').textContent = active ? 'Recuperar Senha' : 'Entrar no Sistema';
+  document.getElementById('btn-auth-primary').textContent = active ? 'Enviar E-mail de Recuperação' : 'Entrar';
+  
+  document.getElementById('auth-name-field').style.display = 'none';
+  document.getElementById('auth-password-field').style.display = active ? 'none' : 'block';
+  document.getElementById('auth-toggle-container').style.display = active ? 'none' : 'block';
+  document.getElementById('auth-back-login-container').style.display = active ? 'block' : 'none';
 }
 
 async function handleAuth() {
@@ -237,19 +261,21 @@ async function handleAuth() {
   const password = document.getElementById('auth-password').value;
   const name = document.getElementById('auth-name').value.trim();
 
-  if (!email || !password || (isSignUpMode && !name)) {
+  if (!email || (!isForgotMode && !password) || (isSignUpMode && !name)) {
     toast('Preencha todos os campos obrigatórios.');
     return;
   }
 
   showLoading(true);
-  const urlEndpoint = isSignUpMode ? `${SUPABASE_URL}/auth/v1/signup` : `${SUPABASE_URL}/auth/v1/token?grant_type=password`;
 
-  // Prepara os dados para envio. Se for cadastro, inclui o nome no user_metadata (options.data)
-  const payload = { email, password };
-  if (isSignUpMode) {
-    payload.options = { data: { full_name: name } };
-  }
+  // Define a rota do endpoint baseado no modo da tela
+  let urlEndpoint = `${SUPABASE_URL}/auth/v1/token?grant_type=password`;
+  if (isSignUpMode) urlEndpoint = `${SUPABASE_URL}/auth/v1/signup`;
+  if (isForgotMode) urlEndpoint = `${SUPABASE_URL}/auth/v1/recover`;
+
+  const payload = { email };
+  if (!isForgotMode) payload.password = password;
+  if (isSignUpMode) payload.options = { data: { full_name: name } };
 
   try {
     const res = await fetch(urlEndpoint, {
@@ -261,7 +287,10 @@ async function handleAuth() {
     const dados = await res.json();
     if (!res.ok) throw new Error(dados.error_description || dados.msg || 'Erro na operação.');
 
-    if (isSignUpMode) {
+    if (isForgotMode) {
+      toast('E-mail de recuperação enviado! Verifique sua caixa de entrada.');
+      toggleForgotMode(false);
+    } else if (isSignUpMode) {
       toast('Cadastro realizado com sucesso! Verifique seu e-mail para confirmar.');
       toggleAuthMode();
       document.getElementById('auth-password').value = '';
