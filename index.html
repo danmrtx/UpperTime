@@ -291,8 +291,18 @@ async function handleAuth() {
       toast('E-mail de recuperação enviado! Verifique sua caixa de entrada.');
       toggleForgotMode(false);
     } else if (isSignUpMode) {
-      toast('Cadastro realizado com sucesso! Faça seu login.');
-      toggleAuthMode();
+      // Login imediato após o cadastro se as configurações de confirmação de e-mail permitirem autologin
+      if (dados.access_token) {
+        usuarioLogado = dados.user;
+        localStorage.setItem('session_access_token', dados.access_token);
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        carregarDadosNuvem();
+        toast('Conta criada com sucesso!');
+      } else {
+        toast('Cadastro realizado! Faça login com suas credenciais.');
+        toggleAuthMode();
+      }
       document.getElementById('auth-password').value = '';
       document.getElementById('auth-name').value = '';
     } else {
