@@ -244,6 +244,7 @@ function toggleAuthMode() {
   isForgotMode = false;
   isResetMode = false;
   
+  document.getElementById('label-password').textContent = 'Senha';
   document.getElementById('auth-title').textContent = isSignUpMode ? 'Criar Nova Conta' : 'Entrar no Sistema';
   document.getElementById('btn-auth-primary').textContent = isSignUpMode ? 'Cadastrar' : 'Entrar';
   document.getElementById('auth-switch-text').textContent = isSignUpMode ? 'Já tem uma conta?' : 'Não tem uma conta?';
@@ -264,6 +265,7 @@ function toggleForgotMode(active) {
   isSignUpMode = false;
   isResetMode = false;
   
+  document.getElementById('label-password').textContent = 'Senha';
   document.getElementById('auth-title').textContent = active ? 'Recuperar Senha' : 'Entrar no Sistema';
   document.getElementById('btn-auth-primary').textContent = active ? 'Enviar E-mail' : 'Entrar';
   
@@ -287,7 +289,7 @@ function toggleResetMode() {
   document.getElementById('label-password').textContent = 'Nova Senha';
   
   document.getElementById('auth-name-field').style.display = 'none';
-  document.getElementById('auth-email-field').style.display = 'none';
+  document.getElementById('auth-email-field').style.display = 'none'; // Esconde campo de e-mail na redefinição
   document.getElementById('auth-password-field').style.display = 'block';
   document.getElementById('auth-confirm-password-field').style.display = 'block';
   document.getElementById('auth-forgot-container').style.display = 'none';
@@ -312,6 +314,11 @@ function cancelSpecialModes() {
   document.getElementById('auth-toggle-container').style.display = 'block';
   document.getElementById('auth-back-login-container').style.display = 'none';
   limparCamposAuth();
+  
+  // Limpa os parâmetros de hash da URL para evitar recarregamento infinito em modo reset
+  if(window.location.hash) {
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
 }
 
 function limparCamposAuth() {
@@ -369,7 +376,6 @@ async function handleAuth() {
     if (!res.ok) {
       const erroTexto = dados.error_description || dados.msg || dados.error || '';
       
-      // Validações e traduções exatas exigidas tratadas com precisão
       if (erroTexto.includes('Invalid login credentials') || res.status === 400 && !isSignUpMode && !isForgotMode) {
         throw new Error('A senha ou e-mail que botou para fazer login estão errados.');
       } else if (erroTexto.includes('User already registered') || erroTexto.includes('already exists')) {
@@ -470,16 +476,17 @@ async function inicializarApp() {
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
+  // CORREÇÃO CRÍTICA: Se contiver o token e for do tipo recovery, prioriza TOTAL o reset de senha
   if (tokenDoEmail) {
     localStorage.setItem('session_access_token', tokenDoEmail);
-    window.history.replaceState({}, document.title, window.location.pathname);
     
     if (tipoLink === 'recovery') {
       document.getElementById('auth-screen').style.display = 'flex';
       document.getElementById('app').style.display = 'none';
-      toggleResetMode();
-      return;
+      toggleResetMode(); 
+      return; // Trava a execução aqui e não deixa a validação de login comum sobrescrever a tela!
     }
+    window.history.replaceState({}, document.title, window.location.pathname);
   }
 
   const savedToken = localStorage.getItem('session_access_token');
