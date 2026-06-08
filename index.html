@@ -315,7 +315,7 @@ function cancelSpecialModes() {
   document.getElementById('auth-back-login-container').style.display = 'none';
   limparCamposAuth();
   
-  // Limpa os parâmetros de hash da URL para evitar recarregamento infinito em modo reset
+  // Limpa os parâmetros de hash da URL para evitar recarregamento involuntário
   if(window.location.hash) {
     window.history.replaceState({}, document.title, window.location.pathname);
   }
@@ -353,7 +353,8 @@ async function handleAuth() {
     payload = { email, password, options: { data: { full_name: name } } };
   } else if (isForgotMode) {
     urlEndpoint = `${SUPABASE_URL}/auth/v1/recover`;
-    payload = { email, options: { redirectTo: window.location.origin + window.location.pathname } };
+    // CORREÇÃO: Força o link do e-mail a carregar apontando para a pasta correta do seu repositório no GitHub Pages
+    payload = { email, options: { redirectTo: 'https://danmrtx.github.io/NOME-DO-SEU-REPOSITORIO/' } };
   } else if (isResetMode) {
     urlEndpoint = `${SUPABASE_URL}/auth/v1/user`;
     method = 'PUT';
@@ -476,7 +477,7 @@ async function inicializarApp() {
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
-  // CORREÇÃO CRÍTICA: Se contiver o token e for do tipo recovery, prioriza TOTAL o reset de senha
+  // TRAVA DE SEGURANÇA: Identifica o link de recuperação e impede redirecionamentos incorretos
   if (tokenDoEmail) {
     localStorage.setItem('session_access_token', tokenDoEmail);
     
@@ -484,7 +485,7 @@ async function inicializarApp() {
       document.getElementById('auth-screen').style.display = 'flex';
       document.getElementById('app').style.display = 'none';
       toggleResetMode(); 
-      return; // Trava a execução aqui e não deixa a validação de login comum sobrescrever a tela!
+      return; // Aborta as rotinas de verificação automática comuns para prender a tela no formulário de senha!
     }
     window.history.replaceState({}, document.title, window.location.pathname);
   }
