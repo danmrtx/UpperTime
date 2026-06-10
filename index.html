@@ -310,6 +310,7 @@ function cancelSpecialModes() {
   isSignUpMode = false;
   isForgotMode = false;
   isResetMode = false;
+  sessionStorage.removeItem('is_recovering_password'); // Limpa a trava de segurança reativa
   document.getElementById('label-password').textContent = 'Senha';
   document.getElementById('auth-title').textContent = 'Entrar no Sistema';
   document.getElementById('btn-auth-primary').textContent = 'Entrar';
@@ -373,13 +374,13 @@ async function handleAuth() {
       cancelSpecialModes();
 
     } else if (isResetMode) {
-      // Executa a redefinição utilizando a sessão autenticada ativa no cliente
+      // Executa a redefinição utilizando a sessão estável ativa na SDK
       const { data, error } = await supabaseClient.auth.updateUser({
         password: password
       });
       if (error) throw error;
       
-      console.log("Senha alterada com sucesso:", data);
+      console.log("Senha alterada com sucesso via SDK:", data);
       toast('Sua senha foi redefinida com sucesso!');
       cancelSpecialModes();
 
@@ -472,14 +473,20 @@ async function inicializarApp() {
       localStorage.setItem('session_access_token', session.access_token);
     }
 
-    if (event === 'PASSWORD_RECOVERY') {
-      document.getElementById('auth-screen').style.display = 'flex';
-      document.getElementById('app').style.display = 'none';
-      toggleResetMode();
+    // Se interceptar a recuperação ou se a aba já estiver travada sob o modo de redefinição
+    if (event === 'PASSWORD_RECOVERY' || sessionStorage.getItem('is_recovering_password') === 'true') {
+      sessionStorage.setItem('is_recovering_password', 'true');
+      
+      // Delay tático para aguardar a renderização completa do DOM
+      setTimeout(() => {
+        document.getElementById('auth-screen').style.display = 'flex';
+        document.getElementById('app').style.display = 'none';
+        toggleResetMode();
+      }, 150);
     }
   });
 
-  // 2. Fallback Analisador Manual de URL para contornar ausência de barra separadora (/) no template do e-mail
+  // 2. Fallback Analisador Manual de URL
   let hash = window.location.hash || '';
   let search = window.location.search || '';
   let urlParamsStr = hash.startsWith('#') ? hash.replace('#', '?') : search;
@@ -492,10 +499,16 @@ async function inicializarApp() {
 
   if (errorDesc) {
     toast('O link expirou ou já foi utilizado. Solicite uma nova recuperação.');
+    sessionStorage.removeItem('is_recovering_password');
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
-  // Se houver token mas o listener nativo demorou para assimilar, injetamos a sessão manualmente
+  // Prende preventivamente no estado de recuperação caso encontre as chaves na URL
+  if (tipoLink === 'recovery' || hash.includes('type=recovery') || tokenDoEmail) {
+    sessionStorage.setItem('is_recovering_password', 'true');
+  }
+
+  // Acoplador manual de sessão estável na SDK
   if (tokenDoEmail) {
     showLoading(true);
     try {
@@ -509,13 +522,13 @@ async function inicializarApp() {
         localStorage.setItem('session_access_token', sessionData.session.access_token);
         console.log("Sessão inicializada manualmente via Fallback da URL.");
         
-        if (tipoLink === 'recovery' || hash.includes('type=recovery')) {
+        setTimeout(() => {
           document.getElementById('auth-screen').style.display = 'flex';
           document.getElementById('app').style.display = 'none';
           toggleResetMode();
-          showLoading(false);
-          return;
-        }
+        }, 150);
+        showLoading(false);
+        return;
       }
     } catch (err) {
       console.error("Falha ao processar injeção manual:", err);
@@ -528,7 +541,8 @@ async function inicializarApp() {
   // 3. Verificação de persistência de sessão padrão para usuários recorrentes
   try {
     const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session) {
+    // Só ignora a tela de login se NÃO estiver no fluxo ativo de redefinição de senha
+    if (session && sessionStorage.getItem('is_recovering_password') !== 'true') {
       usuarioLogado = session.user;
       localStorage.setItem('session_access_token', session.access_token);
       document.getElementById('auth-screen').style.display = 'none';
@@ -540,9 +554,11 @@ async function inicializarApp() {
     console.error("Erro na leitura de sessão local persistente:", e);
   }
 
-  // Se nada for interceptado, mantém o login padrão visível
-  document.getElementById('auth-screen').style.display = 'flex';
-  document.getElementById('app').style.display = 'none';
+  // Se for o fluxo normal sem redefinição, apenas garante o login limpo na tela
+  if (sessionStorage.getItem('is_recovering_password') !== 'true') {
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+  }
 }
 
 async function logout() {
@@ -672,7 +688,6 @@ function renderHistory(){
     const pList=sched.map(e=>punches[e]||'—').join(' · ');
     html+=`<div class="hist-row"><div style="min-width:95px"><div style="font-size:13px;font-weight:600;">${DAYS[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}</div><div style="font-size:11px;color:var(--text-muted)">${pList}</div></div><div style="flex:1"></div><div class="stat-val ${bCls}" style="font-size:14px">${bal>=0?'+':''}${fmtDelta(bal)}</div></div>`;
   });
-  document.getElementById('hist-list').innerHTML;
   document.getElementById('hist-list').innerHTML=html;
 }
 
