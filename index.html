@@ -368,7 +368,7 @@ async function handleAuth() {
       cancelSpecialModes();
 
     } else if (isResetMode) {
-      // Executa a alteração segura da senha consumindo o contexto da sessão ativa
+      // Modificado para garantir o consumo do usuário que foi acoplado na sessão via URL
       const { data, error } = await supabaseClient.auth.updateUser({
         password: password
       });
@@ -458,18 +458,12 @@ async function salvarPontoNuvem(dataStr, expStr, actStr) {
 
 // --- CONTROLE DE SESSÃO DIRETA ---
 async function inicializarApp() {
-  // Escuta nativamente as mudanças de autenticação da SDK (incluindo retornos de hash de e-mail)
+  // Sincroniza o listener global da SDK de forma reativa
   supabaseClient.auth.onAuthStateChange(async (event, session) => {
     console.log("Evento AuthStateChange interceptado:", event, session);
-    
-    if (event === 'PASSWORD_RECOVERY') {
-      if (session) {
-        usuarioLogado = session.user;
-        localStorage.setItem('session_access_token', session.access_token);
-      }
-      document.getElementById('auth-screen').style.display = 'flex';
-      document.getElementById('app').style.display = 'none';
-      toggleResetMode();
+    if (session) {
+      usuarioLogado = session.user;
+      localStorage.setItem('session_access_token', session.access_token);
     }
   });
 
@@ -478,13 +472,39 @@ async function inicializarApp() {
   let urlParamsStr = hash.startsWith('#') ? hash.replace('#', '?') : search;
   const urlParams = new URLSearchParams(urlParamsStr);
   
+  let tokenDoEmail = urlParams.get('access_token');
   let errorDesc = urlParams.get('error_description');
+
   if (errorDesc) {
     toast('O link de recuperação expirou ou já foi utilizado.');
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
-  // Verifica persistência de sessão local estável antes de forçar a tela de login
+  // CORREÇÃO CIRÚRGICA: Se houver um token de e-mail na URL, força a injeção manual de sessão estável na SDK
+  if (tokenDoEmail) {
+    localStorage.setItem('session_access_token', tokenDoEmail);
+    
+    // Força a montagem de sessão na SDK contornando a ausência da barra separadora (/)
+    const { data: setSessionData, error: setSessionError } = await supabaseClient.auth.setSession({
+      access_token: tokenDoEmail,
+      refresh_token: urlParams.get('refresh_token') || tokenDoEmail
+    });
+
+    if (!setSessionError && setSessionData.session) {
+      usuarioLogado = setSessionData.user;
+      console.log("Sessão manual injetada com sucesso! Usuário:", usuarioLogado);
+    }
+
+    if (hash.includes('type=recovery') || search.includes('type=recovery')) {
+      document.getElementById('auth-screen').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
+      toggleResetMode();
+      return;
+    }
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  // Tratamento estável de persistência de sessão comum (usuário recorrente)
   try {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (session) {
@@ -497,15 +517,7 @@ async function inicializarApp() {
       return;
     }
   } catch (e) {
-    console.error("Falha ao recuperar sessão local:", e);
-  }
-
-  // Se a URL contiver parâmetros mas a SDK não disparou o evento (caso de cache agressivo), força o gatilho manual
-  if (hash.includes('type=recovery') || search.includes('type=recovery')) {
-    document.getElementById('auth-screen').style.display = 'flex';
-    document.getElementById('app').style.display = 'none';
-    toggleResetMode();
-    return;
+    console.error("Falha ao recuperar sessão local persistente:", e);
   }
   
   document.getElementById('auth-screen').style.display = 'flex';
