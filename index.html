@@ -224,7 +224,7 @@ const CHAVE_URL = "3009";
 const SUPABASE_URL = "https://pnlsopcqsbotvqyctovz.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBubHNvcGNxc2JvdHZxeWN0b3Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMTc4MDYsImV4cCI6MjA5NDY5MzgwNn0.wkx_X47q1RfqG91HnH0V5yfOZAR0hiKRPFZ1Zscopag";
 
-// Modificado para evitar colisão de nomes com a classe global da SDK
+// Corrigido para utilizar escopo e nome isolado da biblioteca global
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // ==================================================================
 
@@ -368,10 +368,20 @@ async function handleAuth() {
       cancelSpecialModes();
 
     } else if (isResetMode) {
+      // Monitoramento preventivo de Sessão Ativa
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      console.log("Sessão ativa detectada para redefinição:", sessionData.session);
+
+      if (!sessionData.session) {
+        throw new Error("Sessão de recuperação expirada ou inválida. Por favor, solicite um novo e-mail de redefinição.");
+      }
+
       const { data, error } = await supabaseClient.auth.updateUser({
         password: password
       });
       if (error) throw error;
+      
+      console.log("Senha alterada com sucesso. Resposta do servidor:", data);
       toast('Sua senha foi redefinida com sucesso!');
       cancelSpecialModes();
 
@@ -399,13 +409,14 @@ async function handleAuth() {
       toast('Login bem-sucedido!');
     }
   } catch (e) {
+    console.error("Erro detalhado no fluxo de Autenticação:", e);
     toast(e.message || 'Ocorreu um erro no processamento da autenticação.');
   } finally {
     showLoading(false);
   }
 }
 
-// --- CONEXÃO COM O SUPABASE ---
+// --- CONEXÃO COM O SUPABASE REST (DADOS DAS BATIDAS) ---
 async function carregarDadosNuvem() {
   if (!usuarioLogado) return;
   showLoading(true);
@@ -471,7 +482,7 @@ async function inicializarApp() {
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
-  // Permite à SDK assimilar os tokens da URL e criar a sessão segura
+  // Sincroniza e assimila os tokens de links externos nativamente via SDK
   if (tokenDoEmail) {
     localStorage.setItem('session_access_token', tokenDoEmail);
     
@@ -493,7 +504,7 @@ async function inicializarApp() {
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
-  // Gerencia sessão persistente nativamente via SDK
+  // Monitora sessão persistente nativamente pela SDK
   showLoading(true);
   try {
     const { data: { session } } = await supabaseClient.auth.getSession();
