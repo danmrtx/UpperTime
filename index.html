@@ -224,7 +224,7 @@ const CHAVE_URL = "3009";
 const SUPABASE_URL = "https://pnlsopcqsbotvqyctovz.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBubHNvcGNxc2JvdHZxeWN0b3Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMTc4MDYsImV4cCI6MjA5NDY5MzgwNn0.wkx_X47q1RfqG91HnH0V5yfOZAR0hiKRPFZ1Zscopag";
 
-// Corrigido para utilizar escopo e nome isolado da biblioteca global
+// Inicialização isolada da SDK oficial
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // ==================================================================
 
@@ -242,7 +242,7 @@ let usuarioLogado = null;
 
 function showLoading(v){ document.getElementById('loading').style.display = v ? 'flex' : 'none'; }
 
-// --- SISTEMA DE AUTENTICAÇÃO ---
+// --- SISTEMA DE DIRECIONAMENTO DE TELAS (AUTH MODES) ---
 function toggleAuthMode() {
   isSignUpMode = !isSignUpMode;
   isForgotMode = false;
@@ -329,7 +329,7 @@ function limparCamposAuth() {
   document.getElementById('auth-confirm-password').value = '';
 }
 
-// --- FLUXOS DE AUTENTICAÇÃO USANDO A SDK SUPABASE ---
+// --- LOGICA DE PROCESSAMENTO DE AUTENTICAÇÃO ---
 async function handleAuth() {
   const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
@@ -368,7 +368,7 @@ async function handleAuth() {
       cancelSpecialModes();
 
     } else if (isResetMode) {
-      // Monitoramento preventivo de Sessão Ativa
+      // Monitora o estado de sessão atualizado
       const { data: sessionData } = await supabaseClient.auth.getSession();
       console.log("Sessão ativa detectada para redefinição:", sessionData.session);
 
@@ -416,7 +416,7 @@ async function handleAuth() {
   }
 }
 
-// --- CONEXÃO COM O SUPABASE REST (DADOS DAS BATIDAS) ---
+// --- COMUNICAÇÃO COM A DATABASE REST (TABELA PONTOS) ---
 async function carregarDadosNuvem() {
   if (!usuarioLogado) return;
   showLoading(true);
@@ -466,7 +466,7 @@ async function salvarPontoNuvem(dataStr, expStr, actStr) {
   }
 }
 
-// --- CONTROLE DE SESSÃO DIRETA ---
+// --- COORDENADOR DE SESSÕES E LINKS DE RECUPERAÇÃO DE E-MAIL ---
 async function inicializarApp() {
   let hash = window.location.hash || '';
   let search = window.location.search || '';
@@ -474,6 +474,7 @@ async function inicializarApp() {
   const urlParams = new URLSearchParams(urlParamsStr);
   
   let tokenDoEmail = urlParams.get('access_token');
+  let refreshDoEmail = urlParams.get('refresh_token');
   let tipoLink = urlParams.get('type');
   let errorDesc = urlParams.get('error_description');
 
@@ -482,18 +483,25 @@ async function inicializarApp() {
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
-  // Sincroniza e assimila os tokens de links externos nativamente via SDK
+  // Captura direta e forçada do token enviado por e-mail
   if (tokenDoEmail) {
     localStorage.setItem('session_access_token', tokenDoEmail);
     
     if (tipoLink === 'recovery') {
       try {
-        const { data: { user }, error } = await supabaseClient.auth.getUser(tokenDoEmail);
-        if (user && !error) {
-          usuarioLogado = user;
-        }
+        // ASSIMILAÇÃO FORÇADA DE SESSÃO ATIVA NA SDK
+        const { data: setSessionData, error: setSessionError } = await supabaseClient.auth.setSession({
+          access_token: tokenDoEmail,
+          refresh_token: refreshDoEmail || tokenDoEmail
+        });
+
+        if (setSessionError) throw setSessionError;
+
+        usuarioLogado = setSessionData.user;
+        console.log("Sessão forçada com sucesso via setSession! Usuário:", usuarioLogado);
+
       } catch (e) {
-        console.error("Erro ao validar token inicial do e-mail:", e);
+        console.error("Erro crítico ao forçar sessão inicial:", e);
       }
 
       document.getElementById('auth-screen').style.display = 'flex';
@@ -504,7 +512,7 @@ async function inicializarApp() {
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
-  // Monitora sessão persistente nativamente pela SDK
+  // Tratamento nativo de persistência de sessão comum
   showLoading(true);
   try {
     const { data: { session } } = await supabaseClient.auth.getSession();
@@ -539,6 +547,7 @@ async function logout() {
   toast('Você saiu do sistema.');
 }
 
+// --- FUNÇÕES E LÓGICA CORE DA APLICAÇÃO ---
 function getSched(d){return d.getDay()===6?SCHED_SAT:SCHED_WEEK}
 function dateKey(d){return d.toISOString().slice(0,10)}
 function parseMins(s){const[h,m]=s.split(':').map(Number);return h*60+m}
