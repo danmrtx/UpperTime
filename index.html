@@ -224,8 +224,8 @@ const CHAVE_URL = "3009";
 const SUPABASE_URL = "https://pnlsopcqsbotvqyctovz.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBubHNvcGNxc2JvdHZxeWN0b3Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMTc4MDYsImV4cCI6MjA5NDY5MzgwNn0.wkx_X47q1RfqG91HnH0V5yfOZAR0hiKRPFZ1Zscopag";
 
-// Inicializa a SDK do Supabase V2 de forma nativa
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Modificado para evitar colisão de nomes com a classe global da SDK
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // ==================================================================
 
 const SCHED_WEEK=['08:00','12:00','14:00','18:00'];
@@ -349,7 +349,7 @@ async function handleAuth() {
 
   try {
     if (isSignUpMode) {
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error } = await supabaseClient.auth.signUp({
         email,
         password,
         options: { data: { full_name: name } }
@@ -360,7 +360,7 @@ async function handleAuth() {
       document.getElementById('auth-email').value = email;
 
     } else if (isForgotMode) {
-      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, {
         redirectTo: 'https://danmrtx.github.io/UpperTime/'
       });
       if (error) throw error;
@@ -368,8 +368,7 @@ async function handleAuth() {
       cancelSpecialModes();
 
     } else if (isResetMode) {
-      // Atualiza a senha pelo painel seguro nativo da SDK
-      const { data, error } = await supabase.auth.updateUser({
+      const { data, error } = await supabaseClient.auth.updateUser({
         password: password
       });
       if (error) throw error;
@@ -377,7 +376,7 @@ async function handleAuth() {
       cancelSpecialModes();
 
     } else {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
         email,
         password
       });
@@ -389,7 +388,7 @@ async function handleAuth() {
       }
       
       usuarioLogado = data.user;
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await supabaseClient.auth.getSession();
       if (session) {
         localStorage.setItem('session_access_token', session.access_token);
       }
@@ -472,13 +471,13 @@ async function inicializarApp() {
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
-  // Verifica o link de recuperação vindo do e-mail nativamente pela SDK
+  // Permite à SDK assimilar os tokens da URL e criar a sessão segura
   if (tokenDoEmail) {
     localStorage.setItem('session_access_token', tokenDoEmail);
     
     if (tipoLink === 'recovery') {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser(tokenDoEmail);
+        const { data: { user }, error } = await supabaseClient.auth.getUser(tokenDoEmail);
         if (user && !error) {
           usuarioLogado = user;
         }
@@ -494,12 +493,12 @@ async function inicializarApp() {
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
-  // Monitora sessão persistente via SDK
+  // Gerencia sessão persistente nativamente via SDK
   showLoading(true);
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await supabaseClient.auth.getSession();
     if (session) {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabaseClient.auth.getUser();
       usuarioLogado = user;
       localStorage.setItem('session_access_token', session.access_token);
       
@@ -521,7 +520,7 @@ async function inicializarApp() {
 }
 
 async function logout() {
-  await supabase.auth.signOut();
+  await supabaseClient.auth.signOut();
   localStorage.removeItem('session_access_token');
   usuarioLogado = null;
   cacheDadosNuvem = {};
