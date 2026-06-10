@@ -224,7 +224,12 @@ const CHAVE_URL = "3009";
 const SUPABASE_URL = "https://pnlsopcqsbotvqyctovz.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBubHNvcGNxc2JvdHZxeWN0b3Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMTc4MDYsImV4cCI6MjA5NDY5MzgwNn0.wkx_X47q1RfqG91HnH0V5yfOZAR0hiKRPFZ1Zscopag";
 
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true
+  }
+});
 // ==================================================================
 
 const SCHED_WEEK=['08:00','12:00','14:00','18:00'];
@@ -241,7 +246,7 @@ let usuarioLogado = null;
 
 function showLoading(v){ document.getElementById('loading').style.display = v ? 'flex' : 'none'; }
 
-// --- SISTEMA DE AUTENTICAÇÃO ---
+// --- SISTEMA DE DIRECIONAMENTO DE TELAS ---
 function toggleAuthMode() {
   isSignUpMode = !isSignUpMode;
   isForgotMode = false;
@@ -328,7 +333,7 @@ function limparCamposAuth() {
   document.getElementById('auth-confirm-password').value = '';
 }
 
-// --- FLUXOS DE AUTENTICAÇÃO USANDO A SDK SUPABASE ---
+// --- MECÂNICA DE AUTENTICAÇÃO CORE ---
 async function handleAuth() {
   const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
@@ -368,13 +373,13 @@ async function handleAuth() {
       cancelSpecialModes();
 
     } else if (isResetMode) {
-      // Modificado para garantir o consumo do usuário que foi acoplado na sessão via URL
+      // Executa a redefinição utilizando a sessão autenticada ativa no cliente
       const { data, error } = await supabaseClient.auth.updateUser({
         password: password
       });
       if (error) throw error;
       
-      console.log("Senha alterada com sucesso via SDK:", data);
+      console.log("Senha alterada com sucesso:", data);
       toast('Sua senha foi redefinida com sucesso!');
       cancelSpecialModes();
 
@@ -399,14 +404,14 @@ async function handleAuth() {
       toast('Login bem-sucedido!');
     }
   } catch (e) {
-    console.error("Erro detalhado no fluxo de Autenticação:", e);
-    toast(e.message || 'Ocorreu um erro no processamento da autenticação.');
+    console.error("Erro detalhado no processamento Auth:", e);
+    toast(e.message || 'Ocorreu um erro na validação dos dados.');
   } finally {
     showLoading(false);
   }
 }
 
-// --- CONEXÃO COM O SUPABASE REST (TABELA PONTOS) ---
+// --- SINCRONIZAÇÃO DA BASE DE DADOS REST ---
 async function carregarDadosNuvem() {
   if (!usuarioLogado) return;
   showLoading(true);
@@ -456,70 +461,86 @@ async function salvarPontoNuvem(dataStr, expStr, actStr) {
   }
 }
 
-// --- CONTROLE DE SESSÃO DIRETA ---
+// --- CONTROLE DE INICIALIZAÇÃO E CAPTURA DE LINKS DO E-MAIL ---
 async function inicializarApp() {
-  // Sincroniza o listener global da SDK de forma reativa
+  // 1. Ouvinte reativo global da SDK: lida nativamente com o fluxo de tokens encapsulados
   supabaseClient.auth.onAuthStateChange(async (event, session) => {
     console.log("Evento AuthStateChange interceptado:", event, session);
+    
     if (session) {
       usuarioLogado = session.user;
       localStorage.setItem('session_access_token', session.access_token);
     }
+
+    if (event === 'PASSWORD_RECOVERY') {
+      document.getElementById('auth-screen').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
+      toggleResetMode();
+    }
   });
 
+  // 2. Fallback Analisador Manual de URL para contornar ausência de barra separadora (/) no template do e-mail
   let hash = window.location.hash || '';
   let search = window.location.search || '';
   let urlParamsStr = hash.startsWith('#') ? hash.replace('#', '?') : search;
   const urlParams = new URLSearchParams(urlParamsStr);
   
   let tokenDoEmail = urlParams.get('access_token');
+  let refreshDoEmail = urlParams.get('refresh_token');
+  let tipoLink = urlParams.get('type');
   let errorDesc = urlParams.get('error_description');
 
   if (errorDesc) {
-    toast('O link de recuperação expirou ou já foi utilizado.');
+    toast('O link expirou ou já foi utilizado. Solicite uma nova recuperação.');
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
-  // CORREÇÃO CIRÚRGICA: Se houver um token de e-mail na URL, força a injeção manual de sessão estável na SDK
+  // Se houver token mas o listener nativo demorou para assimilar, injetamos a sessão manualmente
   if (tokenDoEmail) {
-    localStorage.setItem('session_access_token', tokenDoEmail);
-    
-    // Força a montagem de sessão na SDK contornando a ausência da barra separadora (/)
-    const { data: setSessionData, error: setSessionError } = await supabaseClient.auth.setSession({
-      access_token: tokenDoEmail,
-      refresh_token: urlParams.get('refresh_token') || tokenDoEmail
-    });
+    showLoading(true);
+    try {
+      const { data: sessionData, error: sessionError } = await supabaseClient.auth.setSession({
+        access_token: tokenDoEmail,
+        refresh_token: refreshDoEmail || tokenDoEmail
+      });
 
-    if (!setSessionError && setSessionData.session) {
-      usuarioLogado = setSessionData.user;
-      console.log("Sessão manual injetada com sucesso! Usuário:", usuarioLogado);
-    }
-
-    if (hash.includes('type=recovery') || search.includes('type=recovery')) {
-      document.getElementById('auth-screen').style.display = 'flex';
-      document.getElementById('app').style.display = 'none';
-      toggleResetMode();
-      return;
+      if (!sessionError && sessionData.session) {
+        usuarioLogado = sessionData.user;
+        localStorage.setItem('session_access_token', sessionData.session.access_token);
+        console.log("Sessão inicializada manualmente via Fallback da URL.");
+        
+        if (tipoLink === 'recovery' || hash.includes('type=recovery')) {
+          document.getElementById('auth-screen').style.display = 'flex';
+          document.getElementById('app').style.display = 'none';
+          toggleResetMode();
+          showLoading(false);
+          return;
+        }
+      }
+    } catch (err) {
+      console.error("Falha ao processar injeção manual:", err);
+    } finally {
+      showLoading(false);
     }
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
-  // Tratamento estável de persistência de sessão comum (usuário recorrente)
+  // 3. Verificação de persistência de sessão padrão para usuários recorrentes
   try {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (session) {
       usuarioLogado = session.user;
       localStorage.setItem('session_access_token', session.access_token);
-      
       document.getElementById('auth-screen').style.display = 'none';
       document.getElementById('app').style.display = 'block';
       carregarDadosNuvem();
       return;
     }
   } catch (e) {
-    console.error("Falha ao recuperar sessão local persistente:", e);
+    console.error("Erro na leitura de sessão local persistente:", e);
   }
-  
+
+  // Se nada for interceptado, mantém o login padrão visível
   document.getElementById('auth-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
 }
@@ -533,6 +554,7 @@ async function logout() {
   toast('Você saiu do sistema.');
 }
 
+// --- SISTEMA INTERNO DE COMPUTAÇÃO DE HORÁRIOS ---
 function getSched(d){return d.getDay()===6?SCHED_SAT:SCHED_WEEK}
 function dateKey(d){return d.toISOString().slice(0,10)}
 function parseMins(s){const[h,m]=s.split(':').map(Number);return h*60+m}
@@ -650,6 +672,7 @@ function renderHistory(){
     const pList=sched.map(e=>punches[e]||'—').join(' · ');
     html+=`<div class="hist-row"><div style="min-width:95px"><div style="font-size:13px;font-weight:600;">${DAYS[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}</div><div style="font-size:11px;color:var(--text-muted)">${pList}</div></div><div style="flex:1"></div><div class="stat-val ${bCls}" style="font-size:14px">${bal>=0?'+':''}${fmtDelta(bal)}</div></div>`;
   });
+  document.getElementById('hist-list').innerHTML;
   document.getElementById('hist-list').innerHTML=html;
 }
 
