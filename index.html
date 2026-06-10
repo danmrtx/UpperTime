@@ -315,7 +315,6 @@ function cancelSpecialModes() {
   document.getElementById('auth-back-login-container').style.display = 'none';
   limparCamposAuth();
   
-  // Limpa os parâmetros de hash da URL para evitar recarregamento involuntário
   if(window.location.hash) {
     window.history.replaceState({}, document.title, window.location.pathname);
   }
@@ -353,26 +352,35 @@ async function handleAuth() {
     payload = { email, password, options: { data: { full_name: name } } };
   } else if (isForgotMode) {
     urlEndpoint = `${SUPABASE_URL}/auth/v1/recover`;
-    // CORREÇÃO: Força o link do e-mail a carregar apontando para a pasta correta do seu repositório no GitHub Pages
-    payload = { email, options: { redirectTo: 'https://danmrtx.github.io/NOME-DO-SEU-REPOSITORIO/' } };
+    payload = { email, options: { redirectTo: 'https://danmrtx.github.io/UpperTime/' } };
   } else if (isResetMode) {
     urlEndpoint = `${SUPABASE_URL}/auth/v1/user`;
     method = 'PUT';
     
-    // CORREÇÃO DINÂMICA: Captura o token fresco do localStorage ou diretamente do hash da URL ativa
+    // CORREÇÃO: Varre de forma robusta e sequencial buscando o token válido ativo
     let token = localStorage.getItem('session_access_token');
-    if (!token) {
+    
+    if (!token && window.location.hash) {
       const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'));
       token = hashParams.get('access_token');
     }
     
+    if (!token && window.location.search) {
+      const searchParams = new URLSearchParams(window.location.search);
+      token = searchParams.get('access_token');
+    }
+    
     if (!token) {
-      toast('Token de autenticação não encontrado. Solicite um novo e-mail.');
+      toast('Sessão expirada. Solicite um novo e-mail de recuperação.');
       showLoading(false);
       return;
     }
     
-    headers['Authorization'] = `Bearer ${token}`;
+    headers = {
+      'apikey': SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
     payload = { password };
   } else {
     payload = { email, password };
@@ -490,15 +498,27 @@ async function inicializarApp() {
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
-  // TRAVA DE SEGURANÇA: Identifica o link de recuperação e impede redirecionamentos incorretos
+  // CORREÇÃO: Inicializa a sessão GoTrue imediatamente com o token temporário fresco do e-mail
   if (tokenDoEmail) {
     localStorage.setItem('session_access_token', tokenDoEmail);
     
     if (tipoLink === 'recovery') {
+      try {
+        const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+          method: 'GET',
+          headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${tokenDoEmail}` }
+        });
+        if (userRes.ok) {
+          usuarioLogado = await userRes.json();
+        }
+      } catch (e) {
+        console.error("Erro ao validar token inicial do e-mail:", e);
+      }
+
       document.getElementById('auth-screen').style.display = 'flex';
       document.getElementById('app').style.display = 'none';
       toggleResetMode(); 
-      return; // Aborta as rotinas de verificação automática comuns para prender a tela no formulário de senha!
+      return; 
     }
     window.history.replaceState({}, document.title, window.location.pathname);
   }
@@ -573,7 +593,6 @@ function showTab(tab){
   if(tab==='summary')renderSummary();
 }
 
-// O restante das funções de renderização permanece inalterado
 function render() {
   const key=dateKey(currentDate);
   const punches=cacheDadosNuvem[key]||{};
