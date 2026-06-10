@@ -358,7 +358,20 @@ async function handleAuth() {
   } else if (isResetMode) {
     urlEndpoint = `${SUPABASE_URL}/auth/v1/user`;
     method = 'PUT';
-    const token = localStorage.getItem('session_access_token');
+    
+    // CORREÇÃO DINÂMICA: Captura o token fresco do localStorage ou diretamente do hash da URL ativa
+    let token = localStorage.getItem('session_access_token');
+    if (!token) {
+      const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'));
+      token = hashParams.get('access_token');
+    }
+    
+    if (!token) {
+      toast('Token de autenticação não encontrado. Solicite um novo e-mail.');
+      showLoading(false);
+      return;
+    }
+    
     headers['Authorization'] = `Bearer ${token}`;
     payload = { password };
   } else {
@@ -560,6 +573,7 @@ function showTab(tab){
   if(tab==='summary')renderSummary();
 }
 
+// O restante das funções de renderização permanece inalterado
 function render() {
   const key=dateKey(currentDate);
   const punches=cacheDadosNuvem[key]||{};
