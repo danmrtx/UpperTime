@@ -316,10 +316,20 @@
 <script>
 // ================= CONFIGURAÇÃO DO SUPABASE E URL =================
 // Captura as variáveis de ambiente injetadas via Vercel ou usa os fallbacks
+function sanitizeSupabaseUrl(url) {
+  if (!url) return '';
+  return url.trim()
+    .replace(/\/+$/, '')
+    .replace(/\/rest\/v1\/?$/i, '')
+    .replace(/\/rest\/?$/i, '')
+    .replace(/\/auth\/v1\/?$/i, '');
+}
+
 const env = window.__UPPERTIME_ENV__ || {};
-const CHAVE_URL = env.CHAVE_URL || "3009"; 
-const SUPABASE_URL = env.SUPABASE_URL || "https://pnlsopcqsbotvqyctovz.supabase.co";
-const SUPABASE_KEY = env.SUPABASE_ANON_KEY || env.SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBubHNvcGNxc2JvdHZxeWN0b3Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMTc4MDYsImV4cCI6MjA5NDY5MzgwNn0.wkx_X47q1RfqG91HnH0V5yfOZAR0hiKRPFZ1Zscopag";
+const CHAVE_URL = (env.CHAVE_URL || "3009").trim(); 
+const rawSupabaseUrl = env.SUPABASE_URL || "https://pnlsopcqsbotvqyctovz.supabase.co";
+const SUPABASE_URL = sanitizeSupabaseUrl(rawSupabaseUrl);
+const SUPABASE_KEY = (env.SUPABASE_ANON_KEY || env.SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBubHNvcGNxc2JvdHZxeWN0b3Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMTc4MDYsImV4cCI6MjA5NDY5MzgwNn0.wkx_X47q1RfqG91HnH0V5yfOZAR0hiKRPFZ1Zscopag").trim();
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: {

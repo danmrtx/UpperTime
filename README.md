@@ -123,6 +123,8 @@ Ao fazer o deploy na Vercel (ou em **Settings > Environment Variables**), config
 | `SUPABASE_ANON_KEY` | `eyJhbGciOi...` (sua chave anon pública) | *Project Settings > API > anon public* |
 | `CHAVE_URL` | `3009` *(opcional, pode ser omitido)* | Chave interna da aplicação |
 
+> ⚠️ **Atenção importante com a `SUPABASE_URL`**: Copie o campo **Project URL** (exemplo: `https://xyz.supabase.co`). **NÃO** adicione `/rest/v1` no final! O Supabase gerencia o Auth em `/auth/v1` e as tabelas em `/rest/v1`. Se colocar `/rest/v1` na URL, o login retornará erro 404.
+
 ---
 
 ### Passo 4: Fazer o Deploy na Vercel
