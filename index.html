@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="./icon.png">
+  <link rel="apple-touch-icon" href="./icon.png">
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#4f46e5">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UpperTime</title>
+  <!-- Injeção dinâmica de variáveis de ambiente na Vercel -->
+  <script src="/api/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <style>
+    :root {
+      --bg-main: #f8fafc;
+      --bg-card: #ffffff;
+      --border-color: #e2e8f0;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --success: #10b981;
+      --danger: #ef4444;
+      --radius: 12px;
+      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body { background-color: var(--bg-main); color: var(--text-main); padding: 1.5rem; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
+    .app-container { width: 100%; max-width: 480px; background: var(--bg-card); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border-color); overflow: hidden; padding: 1.5rem; display: none; }
+    
+    header { margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+    h1 { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    h1 i { color: var(--primary); }
+    .sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+    .tab-bar { display: flex; gap: 4px; background: #f1f5f9; padding: 4px; border-radius: 8px; margin-bottom: 1.5rem; overflow-x: auto; scrollbar-width: none; }
+    .tab-bar::-webkit-scrollbar { display: none; }
+    .tab { flex: 1; min-width: max-content; padding: 8px 10px; text-align: center; font-size: 13px; font-weight: 500; border: none; border-radius: 6px; cursor: pointer; background: none; color: var(--text-muted); transition: all 0.2s; white-space: nowrap; }
+    .tab.active { background: var(--bg-card); color: var(--text-main); box-shadow: 0 1px 3px rgb(0 0 0 / 0.1); }
+    
+    .date-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; }
+    .date-nav button { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; cursor: pointer; color: var(--text-main); font-size: 14px; transition: background 0.2s; }
+    .date-nav button:hover { background: #f8fafc; border-color: #cbd5e1; }
+    .date-label { flex: 1; text-align: center; font-size: 15px; font-weight: 600; }
+    .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+    .stat { background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 14px; }
+    .stat-lbl { font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 4px; }
+    .stat-val { font-size: 20px; font-weight: 700; color: var(--text-main); }
+    .stat-val.pos { color: var(--success); }
+    .stat-val.neg { color: var(--danger); }
+    .sec-title { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; margin-top: 1rem; }
+    .punch-row { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; transition: transform 0.2s; }
+    .punch-row:hover { border-color: #cbd5e1; }
+    .badge { font-size: 12px; font-weight: 600; color: var(--primary); background: #eef2ff; border-radius: 6px; padding: 4px 8px; min-width: 50px; text-align: center; }
+    .pi { flex: 1; }
+    .pi .exp { font-size: 11px; color: var(--text-muted); }
+    .pi .act { font-size: 14px; font-weight: 600; }
+    .delta { font-size: 13px; font-weight: 600; text-align: right; min-width: 70px; }
+    .delta.early { color: var(--success); }
+    .delta.late { color: var(--danger); }
+    .delta.empty { color: var(--text-muted); }
+    
+    .btn { padding: 8px 14px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card); cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text-main); display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
+    .btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+    .punch-btn { background: var(--primary); color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+    .punch-btn:hover { background: var(--primary-hover); }
+    .icon-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 16px; padding: 6px; border-radius: 6px; }
+    .icon-btn:hover { background: #fee2e2; color: var(--danger); }
+    
+    .card { background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 14px; margin-bottom: 1.5rem; }
+    .manual-row { display: flex; gap: 10px; align-items: flex-end; }
+    .mfield { flex: 1; }
+    .mfield label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
+    .mfield select, .mfield input { width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: white; font-size: 14px; outline: none; }
+    .hist-row { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border-color); }
+    .export-bar { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 1.5rem; }
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; border-radius: 8px; padding: 10px 20px; font-size: 13px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 1000; box-shadow: var(--shadow); }
+    .toast.show { opacity: 1; }
+    #weekend-msg { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px; text-align: center; font-size: 13px; color: #1e40af; margin-bottom: 1rem; }
+    #past-date-msg { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 10px; text-align: center; font-size: 13px; color: #c2410c; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 500; }
+    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); display: none; justify-content: center; align-items: center; z-index: 2000; font-weight: 600; color: var(--primary); }
+
+    /* Switch toggle */
+    .switch-toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
+    .switch-toggle input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 24px; }
+    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+    input:checked + .slider { background-color: var(--primary); }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    /* Linhas de configuração de horários */
+    .cfg-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; background: white; padding: 8px; border: 1px solid var(--border-color); border-radius: 8px; }
+    .cfg-row input[type="time"] { padding: 6px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; font-weight: 600; flex: 1; }
+    .cfg-row select { padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; font-weight: 500; background: white; }
+
+    /* Estilos do Painel de Login/Cadastro */
+    #auth-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-main); z-index: 3000; display: flex; justify-content: center; align-items: center; padding: 1.5rem; }
+    .auth-card { width: 100%; max-width: 400px; background: var(--bg-card); border-radius: var(--radius); padding: 2rem; box-shadow: var(--shadow); border: 1px solid var(--border-color); }
+    .auth-card h2 { margin-bottom: 1.5rem; font-size: 20px; font-weight: 700; text-align: center; }
+  </style>
+</head>
+<body>
+
+<div id="auth-screen" style="display: none;">
+  <div class="auth-card">
+    <h2 id="auth-title">Entrar no Sistema</h2>
+    
+    <div class="mfield" id="auth-name-field" style="display: none; margin-bottom: 12px;">
+      <label>Nome Completo</label>
+      <input type="text" id="auth-name" placeholder="Seu Nome">
+    </div>
+
+    <div class="mfield" id="auth-email-field">
+      <label>E-mail</label>
+      <input type="email" id="auth-email" placeholder="seu@email.com">
+    </div>
+    
+    <div class="mfield" id="auth-password-field" style="margin-top: 12px;">
+      <label id="label-password">Senha</label>
+      <input type="password" id="auth-password" placeholder="••••••••">
+    </div>
+
+    <div class="mfield" id="auth-confirm-password-field" style="margin-top: 12px; display: none;">
+      <label>Confirmar Senha</label>
+      <input type="password" id="auth-confirm-password" placeholder="••••••••">
+    </div>
+
+    <div style="text-align: right; margin-top: 6px;" id="auth-forgot-container">
+      <a href="#" id="auth-forgot-link" onclick="toggleForgotMode(true)" style="font-size: 12px; color: var(--primary); text-decoration: none; font-weight: 600;">Esqueci minha senha</a>
+    </div>
+    
+    <button class="punch-btn" id="btn-auth-primary" onclick="handleAuth()" style="width: 100%; margin-top: 1.5rem; padding: 10px; font-weight: 600; border-radius: 8px;">Entrar</button>
+    
+    <p style="text-align: center; margin-top: 1.2rem; font-size: 13px; color: var(--text-muted);" id="auth-toggle-container">
+      <span id="auth-switch-text">Não tem uma conta?</span> 
+      <a href="#" id="auth-switch-link" onclick="toggleAuthMode()" style="color: var(--primary); font-weight: 600; text-decoration: none;">Cadastre-se</a>
+    </p>
+
+    <p style="text-align: center; margin-top: 1.2rem; font-size: 13px; display: none;" id="auth-back-login-container">
+      <a href="#" onclick="cancelSpecialModes()" style="color: var(--text-muted); font-weight: 600; text-decoration: none;"><i class="ti ti-arrow-back-up"></i> Voltar para o Login</a>
+    </p>
+  </div>
+</div>
+
+<div class="loading-overlay" id="loading">Sincronizando com a nuvem...</div>
+
+<div class="app-container" id="app">
+    <header>
+      <div>
+        <h1><i class="ti ti-clock-bolt"></i> UpperTime</h1>
+        <p class="sub" id="today-lbl"></p>
+      </div>
+    </header>
+
+    <div class="tab-bar">
+      <button class="tab active" onclick="showTab('today')" id="tab-today">Hoje</button>
+      <button class="tab" onclick="showTab('history')" id="tab-history">Histórico</button>
+      <button class="tab" onclick="showTab('period')" id="tab-period">Período</button>
+      <button class="tab" onclick="showTab('summary')" id="tab-summary">Resumo</button>
+      <button class="tab" onclick="showTab('config')" id="tab-config">Config</button>
+      <button class="tab" onclick="showTab('data')" id="tab-data">Dados</button>
+    </div>
+
+    <!-- ABA HOJE -->
+    <div id="view-today" class="tab-view">
+      <div class="date-nav">
+        <button onclick="changeDay(-1)"><i class="ti ti-chevron-left"></i></button>
+        <span class="date-label" id="day-label">—</span>
+        <button onclick="changeDay(1)"><i class="ti ti-chevron-right"></i></button>
+      </div>
+
+      <div id="past-date-msg" style="display:none">
+        <i class="ti ti-alert-circle"></i> Você está visualizando um dia diferente de hoje.
+      </div>
+
+      <div class="grid2">
+        <div class="stat"><div class="stat-lbl">Extras hoje</div><div class="stat-val pos" id="tot-early">0min</div></div>
+        <div class="stat"><div class="stat-lbl">Atrasos hoje</div><div class="stat-val neg" id="tot-late">0min</div></div>
+      </div>
+      <div id="weekend-msg" style="display:none"></div>
+      <div class="sec-title">Batidas do dia</div>
+      <div id="punches-list"></div>
+      
+      <div class="sec-title">Registrar manual</div>
+      <div class="card">
+        <div class="manual-row">
+          <div class="mfield"><label>Esperado</label><select id="man-exp"></select></div>
+          <div class="mfield"><label>Hora Real</label><input type="time" id="man-time"/></div>
+          <button class="btn" onclick="addManual()"><i class="ti ti-plus"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA HISTÓRICO -->
+    <div id="view-history" class="tab-view" style="display:none">
+      <div class="sec-title">Últimos 60 registros</div>
+      <div id="hist-list"></div>
+    </div>
+
+    <!-- ABA PERÍODO -->
+    <div id="view-period" class="tab-view" style="display:none">
+      <div class="card">
+        <div class="manual-row">
+          <div class="mfield">
+            <label>Data Inicial</label>
+            <input type="date" id="p-start-date" onchange="renderPeriod()"/>
+          </div>
+          <div class="mfield">
+            <label>Data Final</label>
+            <input type="date" id="p-end-date" onchange="renderPeriod()"/>
+          </div>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="stat"><div class="stat-lbl">Extras no período</div><div class="stat-val pos" id="p-early">0min</div></div>
+        <div class="stat"><div class="stat-lbl">Atrasos no período</div><div class="stat-val neg" id="p-late">0min</div></div>
+      </div>
+      <div class="grid2">
+        <div class="stat"><div class="stat-lbl">Saldo do período</div><div class="stat-val" id="p-bal">0min</div></div>
+        <div class="stat"><div class="stat-lbl">Dias registrados</div><div class="stat-val" id="p-days">0</div></div>
+      </div>
+    </div>
+
+    <!-- ABA RESUMO -->
+    <div id="view-summary" class="tab-view" style="display:none">
+      <div class="grid2">
+        <div class="stat"><div class="stat-lbl">Extras no mês</div><div class="stat-val pos" id="m-early">0min</div></div>
+        <div class="stat"><div class="stat-lbl">Atrasos no mês</div><div class="stat-val neg" id="m-late">0min</div></div>
+      </div>
+      <div class="grid2">
+        <div class="stat"><div class="stat-lbl">Saldo do mês</div><div class="stat-val" id="m-bal">0min</div></div>
+        <div class="stat"><div class="stat-lbl">Dias registrados</div><div class="stat-val" id="m-days">0</div></div>
+      </div>
+    </div>
+
+    <!-- ABA CONFIGURAÇÕES (NOVA) -->
+    <div id="view-config" class="tab-view" style="display:none">
+      <div class="card" style="margin-bottom: 1rem;">
+        <div style="font-weight: 700; font-size: 15px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+          <i class="ti ti-settings" style="color: var(--primary);"></i> Configuração de Horários
+        </div>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+          Personalize seus horários de trabalho. Configure cada batida como <strong>Entrada</strong> (chegar antes = extra) ou <strong>Saída</strong> (sair depois = extra).
+        </p>
+
+        <!-- SEGUNDA A SEXTA -->
+        <div class="sec-title" style="margin-top:0">Segunda a Sexta-feira</div>
+        <div id="cfg-week-list" style="margin-bottom: 8px;"></div>
+        <button class="btn" onclick="addScheduleItem('week')" style="font-size: 12px; padding: 6px 10px; width: 100%; justify-content: center; margin-bottom: 1.2rem;">
+          <i class="ti ti-plus"></i> Adicionar Horário (Seg - Sex)
+        </button>
+
+        <!-- SÁBADO -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; padding-top: 12px; border-top: 1px solid var(--border-color);">
+          <div>
+            <span style="font-size: 13px; font-weight: 600;">Trabalha aos Sábados?</span>
+            <div style="font-size: 11px; color: var(--text-muted);">Ativa horários para o sábado</div>
+          </div>
+          <label class="switch-toggle">
+            <input type="checkbox" id="cfg-sat-toggle" onchange="toggleDayConfig('sat')">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div id="cfg-sat-container" style="display: none; margin-bottom: 1.2rem;">
+          <div id="cfg-sat-list" style="margin-bottom: 8px;"></div>
+          <button class="btn" onclick="addScheduleItem('sat')" style="font-size: 12px; padding: 6px 10px; width: 100%; justify-content: center;">
+            <i class="ti ti-plus"></i> Adicionar Horário (Sábado)
+          </button>
+        </div>
+
+        <!-- DOMINGO -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; padding-top: 12px; border-top: 1px solid var(--border-color);">
+          <div>
+            <span style="font-size: 13px; font-weight: 600;">Trabalha aos Domingos?</span>
+            <div style="font-size: 11px; color: var(--text-muted);">Ativa horários para o domingo</div>
+          </div>
+          <label class="switch-toggle">
+            <input type="checkbox" id="cfg-sun-toggle" onchange="toggleDayConfig('sun')">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div id="cfg-sun-container" style="display: none; margin-bottom: 1.2rem;">
+          <div id="cfg-sun-list" style="margin-bottom: 8px;"></div>
+          <button class="btn" onclick="addScheduleItem('sun')" style="font-size: 12px; padding: 6px 10px; width: 100%; justify-content: center;">
+            <i class="ti ti-plus"></i> Adicionar Horário (Domingo)
+          </button>
+        </div>
+
+        <!-- AÇÕES DE CONFIGURAÇÃO -->
+        <div style="display: flex; gap: 8px; margin-top: 1.5rem; padding-top: 12px; border-top: 1px solid var(--border-color);">
+          <button class="punch-btn" onclick="saveUserConfig()" style="flex: 2; padding: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <i class="ti ti-device-floppy"></i> Salvar Horários
+          </button>
+          <button class="btn" onclick="resetDefaultConfig()" style="flex: 1; font-size: 12px; justify-content: center;">
+            Padrão CLT
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA DADOS (SEM O BOTÃO APAGAR DADOS DA NUVEM) -->
+    <div id="view-data" class="tab-view" style="display:none">
+      <div class="sec-title">Ações</div>
+      <div class="export-bar">
+        <button class="btn" onclick="exportCSV('all')"><i class="ti ti-download"></i> Baixar Backup Completo (CSV)</button>
+        <button class="btn" onclick="logout()" style="border-color: #cbd5e1;"><i class="ti ti-logout"></i> Sair da Conta (Logout)</button>
+      </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ================= CONFIGURAÇÃO DO SUPABASE E URL =================
+// Captura as variáveis de ambiente injetadas via Vercel ou usa os fallbacks
+const env = window.__UPPERTIME_ENV__ || {};
+const CHAVE_URL = env.CHAVE_URL || "3009"; 
+const SUPABASE_URL = env.SUPABASE_URL || "https://pnlsopcqsbotvqyctovz.supabase.co";
+const SUPABASE_KEY = env.SUPABASE_ANON_KEY || env.SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBubHNvcGNxc2JvdHZxeWN0b3Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMTc4MDYsImV4cCI6MjA5NDY5MzgwNn0.wkx_X47q1RfqG91HnH0V5yfOZAR0hiKRPFZ1Zscopag";
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true
+  }
+});
+// ==================================================================
+
+// Configuração Padrão CLT
+const DEFAULT_CONFIG = {
+  week: [
+    { time: '08:00', type: 'entrada' },
+    { time: '12:00', type: 'saida' },
+    { time: '14:00', type: 'entrada' },
+    { time: '18:00', type: 'saida' }
+  ],
+  saturdayEnabled: true,
+  saturday: [
+    { time: '08:00', type: 'entrada' },
+    { time: '12:00', type: 'saida' }
+  ],
+  sundayEnabled: false,
+  sunday: []
+};
+
+let userConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+
+const DAYS=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const MONTHS=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+
+let currentDate = new Date();
+let cacheDadosNuvem = {};
+let isSignUpMode = false;
+let isForgotMode = false;
+let isResetMode = false;
+let usuarioLogado = null;
+
+function showLoading(v){ document.getElementById('loading').style.display = v ? 'flex' : 'none'; }
+
+// --- SISTEMA DE DIRECIONAMENTO DE TELAS ---
+function toggleAuthMode() {
+  isSignUpMode = !isSignUpMode;
+  isForgotMode = false;
+  isResetMode = false;
+  
+  document.getElementById('label-password').textContent = 'Senha';
+  document.getElementById('auth-title').textContent = isSignUpMode ? 'Criar Nova Conta' : 'Entrar no Sistema';
+  document.getElementById('btn-auth-primary').textContent = isSignUpMode ? 'Cadastrar' : 'Entrar';
+  document.getElementById('auth-switch-text').textContent = isSignUpMode ? 'Já tem uma conta?' : 'Não tem uma conta?';
+  document.getElementById('auth-switch-link').textContent = isSignUpMode ? 'Faça Login' : 'Cadastre-se';
+  
+  document.getElementById('auth-name-field').style.display = isSignUpMode ? 'block' : 'none';
+  document.getElementById('auth-email-field').style.display = 'block';
+  document.getElementById('auth-password-field').style.display = 'block';
+  document.getElementById('auth-confirm-password-field').style.display = isSignUpMode ? 'block' : 'none';
+  document.getElementById('auth-forgot-container').style.display = isSignUpMode ? 'none' : 'block';
+  document.getElementById('auth-toggle-container').style.display = 'block';
+  document.getElementById('auth-back-login-container').style.display = isSignUpMode ? 'block' : 'none';
+  limparCamposAuth();
+}
+
+function toggleForgotMode(active) {
+  isForgotMode = active;
+  isSignUpMode = false;
+  isResetMode = false;
+  
+  document.getElementById('label-password').textContent = 'Senha';
+  document.getElementById('auth-title').textContent = active ? 'Recuperar Senha' : 'Entrar no Sistema';
+  document.getElementById('btn-auth-primary').textContent = active ? 'Enviar E-mail' : 'Entrar';
+  
+  document.getElementById('auth-name-field').style.display = 'none';
+  document.getElementById('auth-email-field').style.display = 'block';
+  document.getElementById('auth-password-field').style.display = active ? 'none' : 'block';
+  document.getElementById('auth-confirm-password-field').style.display = 'none';
+  document.getElementById('auth-forgot-container').style.display = active ? 'none' : 'block';
+  document.getElementById('auth-toggle-container').style.display = active ? 'none' : 'block';
+  document.getElementById('auth-back-login-container').style.display = active ? 'block' : 'none';
+  limparCamposAuth();
+}
+
+function toggleResetMode() {
+  isResetMode = true;
+  isSignUpMode = false;
+  isForgotMode = false;
+
+  document.getElementById('auth-title').textContent = 'Definir Nova Senha';
+  document.getElementById('btn-auth-primary').textContent = 'Salvar Nova Senha';
+  document.getElementById('label-password').textContent = 'Nova Senha';
+  
+  document.getElementById('auth-name-field').style.display = 'none';
+  document.getElementById('auth-email-field').style.display = 'none';
+  document.getElementById('auth-password-field').style.display = 'block';
+  document.getElementById('auth-confirm-password-field').style.display = 'block';
+  document.getElementById('auth-forgot-container').style.display = 'none';
+  document.getElementById('auth-toggle-container').style.display = 'none';
+  document.getElementById('auth-back-login-container').style.display = 'block';
+  limparCamposAuth();
+}
+
+function cancelSpecialModes() {
+  isSignUpMode = false;
+  isForgotMode = false;
+  isResetMode = false;
+  sessionStorage.removeItem('is_recovering_password');
+  document.getElementById('label-password').textContent = 'Senha';
+  document.getElementById('auth-title').textContent = 'Entrar no Sistema';
+  document.getElementById('btn-auth-primary').textContent = 'Entrar';
+  
+  document.getElementById('auth-name-field').style.display = 'none';
+  document.getElementById('auth-email-field').style.display = 'block';
+  document.getElementById('auth-password-field').style.display = 'block';
+  document.getElementById('auth-confirm-password-field').style.display = 'none';
+  document.getElementById('auth-forgot-container').style.display = 'block';
+  document.getElementById('auth-toggle-container').style.display = 'block';
+  document.getElementById('auth-back-login-container').style.display = 'none';
+  limparCamposAuth();
+  
+  if(window.location.hash) {
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+}
+
+function limparCamposAuth() {
+  document.getElementById('auth-password').value = '';
+  document.getElementById('auth-confirm-password').value = '';
+}
+
+// --- MECÂNICA DE AUTENTICAÇÃO CORE ---
+async function handleAuth() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const confirmPassword = document.getElementById('auth-confirm-password').value;
+
+  if (!email && !isResetMode) { toast('Por favor, informe seu e-mail.'); return; }
+  if (!isForgotMode && !password) { toast('Por favor, informe a senha.'); return; }
+
+  if ((isSignUpMode || isResetMode) && password !== confirmPassword) {
+    toast('As senhas digitadas não são iguais! Verifique a confirmação.');
+    return;
+  }
+
+  showLoading(true);
+
+  try {
+    if (isSignUpMode) {
+      const name = document.getElementById('auth-name').value.trim();
+      if (!name) { toast('Por favor, informe o seu nome.'); showLoading(false); return; }
+      
+      const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: name, schedule_config: DEFAULT_CONFIG } }
+      });
+      if (error) throw error;
+      toast('Conta criada com sucesso! Você já pode fazer login.');
+      cancelSpecialModes();
+      document.getElementById('auth-email').value = email;
+
+    } else if (isForgotMode) {
+      // Redireciona dinamicamente para o domínio do deploy atual (Vercel)
+      const redirectUrl = window.location.origin + window.location.pathname;
+      const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl
+      });
+      if (error) throw error;
+      toast('E-mail de recuperação enviado! Verifique sua caixa de entrada.');
+      cancelSpecialModes();
+
+    } else if (isResetMode) {
+      const { data, error } = await supabaseClient.auth.updateUser({
+        password: password
+      });
+      if (error) throw error;
+      
+      toast('Sua senha foi redefinida com sucesso!');
+      cancelSpecialModes();
+
+    } else {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password
+      });
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          throw new Error('A senha ou e-mail que botou para fazer login estão errados.');
+        }
+        throw error;
+      }
+      
+      usuarioLogado = data.user;
+      localStorage.setItem('session_access_token', data.session.access_token);
+      
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      await carregarConfiguracaoUsuario();
+      await carregarDadosNuvem();
+      toast('Login bem-sucedido!');
+    }
+  } catch (e) {
+    console.error("Erro no processamento Auth:", e);
+    toast(e.message || 'Ocorreu um erro na validação dos dados.');
+  } finally {
+    showLoading(false);
+  }
+}
+
+// --- CONFIGURAÇÃO INDIVIDUAL POR USUÁRIO ---
+async function carregarConfiguracaoUsuario() {
+  if (!usuarioLogado) return;
+  try {
+    const token = localStorage.getItem('session_access_token');
+    // 1. Tentar buscar da tabela configuracoes_usuario no Supabase
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/configuracoes_usuario?user_id=eq.${usuarioLogado.id}&select=*`, {
+      method: 'GET',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}`, 'x-app-key': CHAVE_URL }
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.length > 0 && data[0].config && data[0].config.week) {
+        userConfig = data[0].config;
+        localStorage.setItem('uppertime_config_' + usuarioLogado.id, JSON.stringify(userConfig));
+        renderConfigUI();
+        return;
+      }
+    }
+
+    // 2. Se não veio da tabela, verificar no metadata da conta Supabase Auth
+    if (usuarioLogado.user_metadata && usuarioLogado.user_metadata.schedule_config) {
+      userConfig = usuarioLogado.user_metadata.schedule_config;
+      localStorage.setItem('uppertime_config_' + usuarioLogado.id, JSON.stringify(userConfig));
+      renderConfigUI();
+      return;
+    }
+
+    // 3. Fallback para localStorage
+    const local = localStorage.getItem('uppertime_config_' + usuarioLogado.id);
+    if (local) {
+      userConfig = JSON.parse(local);
+      renderConfigUI();
+      return;
+    }
+
+    // 4. Default CLT
+    userConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+  } catch (e) {
+    console.warn('Erro ao carregar configuracoes na nuvem, usando local:', e);
+    const local = localStorage.getItem('uppertime_config_' + usuarioLogado.id);
+    if (local) {
+      try { userConfig = JSON.parse(local); } catch(err){}
+    }
+  }
+  renderConfigUI();
+}
+
+function renderConfigUI() {
+  renderScheduleList('week', userConfig.week || []);
+  renderScheduleList('sat', userConfig.saturday || []);
+  renderScheduleList('sun', userConfig.sunday || []);
+
+  const satToggle = document.getElementById('cfg-sat-toggle');
+  satToggle.checked = !!userConfig.saturdayEnabled;
+  document.getElementById('cfg-sat-container').style.display = userConfig.saturdayEnabled ? 'block' : 'none';
+
+  const sunToggle = document.getElementById('cfg-sun-toggle');
+  sunToggle.checked = !!userConfig.sundayEnabled;
+  document.getElementById('cfg-sun-container').style.display = userConfig.sundayEnabled ? 'block' : 'none';
+}
+
+function renderScheduleList(scope, list) {
+  const container = document.getElementById(`cfg-${scope}-list`);
+  if (!container) return;
+
+  if (!list.length) {
+    container.innerHTML = '<div style="font-size: 12px; color: var(--text-muted); padding: 6px 0;">Nenhum horário cadastrado.</div>';
+    return;
+  }
+
+  let html = '';
+  list.forEach((item, index) => {
+    html += `
+      <div class="cfg-row" data-scope="${scope}" data-index="${index}">
+        <input type="time" class="cfg-time" value="${item.time}" onchange="updateScheduleFromUI('${scope}')">
+        <select class="cfg-type" onchange="updateScheduleFromUI('${scope}')">
+          <option value="entrada" ${item.type === 'entrada' ? 'selected' : ''}>Entrada</option>
+          <option value="saida" ${item.type === 'saida' ? 'selected' : ''}>Saída</option>
+        </select>
+        <button class="icon-btn" onclick="removeScheduleItem('${scope}', ${index})" title="Remover horário">
+          <i class="ti ti-trash"></i>
+        </button>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
+function toggleDayConfig(day) {
+  if (day === 'sat') {
+    userConfig.saturdayEnabled = document.getElementById('cfg-sat-toggle').checked;
+    document.getElementById('cfg-sat-container').style.display = userConfig.saturdayEnabled ? 'block' : 'none';
+    if (userConfig.saturdayEnabled && (!userConfig.saturday || !userConfig.saturday.length)) {
+      userConfig.saturday = [
+        { time: '08:00', type: 'entrada' },
+        { time: '12:00', type: 'saida' }
+      ];
+      renderScheduleList('sat', userConfig.saturday);
+    }
+  } else if (day === 'sun') {
+    userConfig.sundayEnabled = document.getElementById('cfg-sun-toggle').checked;
+    document.getElementById('cfg-sun-container').style.display = userConfig.sundayEnabled ? 'block' : 'none';
+    if (userConfig.sundayEnabled && (!userConfig.sunday || !userConfig.sunday.length)) {
+      userConfig.sunday = [
+        { time: '08:00', type: 'entrada' },
+        { time: '12:00', type: 'saida' }
+      ];
+      renderScheduleList('sun', userConfig.sunday);
+    }
+  }
+}
+
+function addScheduleItem(scope) {
+  updateScheduleFromUI(scope);
+  const targetList = scope === 'week' ? userConfig.week : (scope === 'sat' ? userConfig.saturday : userConfig.sunday);
+  targetList.push({ time: '08:00', type: 'entrada' });
+  renderScheduleList(scope, targetList);
+}
+
+function removeScheduleItem(scope, index) {
+  updateScheduleFromUI(scope);
+  const targetList = scope === 'week' ? userConfig.week : (scope === 'sat' ? userConfig.saturday : userConfig.sunday);
+  targetList.splice(index, 1);
+  renderScheduleList(scope, targetList);
+}
+
+function updateScheduleFromUI(scope) {
+  const container = document.getElementById(`cfg-${scope}-list`);
+  if (!container) return;
+
+  const rows = container.querySelectorAll('.cfg-row');
+  const newList = [];
+  rows.forEach(r => {
+    const time = r.querySelector('.cfg-time').value;
+    const type = r.querySelector('.cfg-type').value;
+    if (time) {
+      newList.push({ time, type });
+    }
+  });
+
+  // Ordena por horário crescente
+  newList.sort((a, b) => parseMins(a.time) - parseMins(b.time));
+
+  if (scope === 'week') userConfig.week = newList;
+  else if (scope === 'sat') userConfig.saturday = newList;
+  else if (scope === 'sun') userConfig.sunday = newList;
+}
+
+async function saveUserConfig() {
+  if (!usuarioLogado) {
+    toast('Você precisa estar logado para salvar.');
+    return;
+  }
+
+  updateScheduleFromUI('week');
+  updateScheduleFromUI('sat');
+  updateScheduleFromUI('sun');
+
+  userConfig.saturdayEnabled = document.getElementById('cfg-sat-toggle').checked;
+  userConfig.sundayEnabled = document.getElementById('cfg-sun-toggle').checked;
+
+  showLoading(true);
+  try {
+    // 1. Salvar no localStorage do usuário
+    localStorage.setItem('uppertime_config_' + usuarioLogado.id, JSON.stringify(userConfig));
+
+    // 2. Salvar no user_metadata do Supabase Auth
+    await supabaseClient.auth.updateUser({
+      data: { schedule_config: userConfig }
+    });
+
+    // 3. Salvar na tabela configuracoes_usuario (se a tabela existir)
+    const token = localStorage.getItem('session_access_token');
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/configuracoes_usuario`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates,return=minimal',
+          'x-app-key': CHAVE_URL
+        },
+        body: JSON.stringify({
+          user_id: usuarioLogado.id,
+          config: userConfig,
+          updated_at: new Date().toISOString()
+        })
+      });
+    } catch (tblErr) {
+      console.warn('Tabela configuracoes_usuario ainda não criada no banco, salvo no Auth metadata:', tblErr);
+    }
+
+    renderConfigUI();
+    render();
+    if(document.getElementById('tab-period').classList.contains('active')) renderPeriod();
+    if(document.getElementById('tab-history').classList.contains('active')) renderHistory();
+    if(document.getElementById('tab-summary').classList.contains('active')) renderSummary();
+
+    toast('Configurações de horários salvas com sucesso!');
+  } catch (err) {
+    console.error('Erro ao salvar configurações:', err);
+    toast('Erro ao sincronizar na nuvem. Salvo localmente.');
+  } finally {
+    showLoading(false);
+  }
+}
+
+function resetDefaultConfig() {
+  if (!confirm('Deseja restaurar as configurações para o padrão CLT (08:00, 12:00, 14:00, 18:00)?')) return;
+  userConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+  renderConfigUI();
+  toast('Padrão CLT carregado. Clique em "Salvar Horários" para confirmar.');
+}
+
+// --- SINCRONIZAÇÃO DA BASE DE DADOS REST ---
+async function carregarDadosNuvem() {
+  if (!usuarioLogado) return;
+  showLoading(true);
+  try {
+    const token = localStorage.getItem('session_access_token');
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/tabela_pontos?user_id=eq.${usuarioLogado.id}&select=*`, {
+      method: 'GET',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}`, 'x-app-key': CHAVE_URL }
+    });
+    const linhas = await res.json();
+    
+    cacheDadosNuvem = {};
+    linhas.forEach(item => {
+      if (!cacheDadosNuvem[item.data_registro]) cacheDadosNuvem[item.data_registro] = {};
+      cacheDadosNuvem[item.data_registro][item.horario_esperado] = item.horario_real;
+    });
+    render();
+    if(document.getElementById('tab-period').classList.contains('active')) renderPeriod();
+  } catch(e) {
+    toast('Erro ao sincronizar dados da nuvem.');
+  } finally {
+    showLoading(false);
+  }
+}
+
+async function salvarPontoNuvem(dataStr, expStr, actStr) {
+  if (!usuarioLogado) return;
+  showLoading(true);
+  const token = localStorage.getItem('session_access_token');
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/tabela_pontos?user_id=eq.${usuarioLogado.id}&data_registro=eq.${dataStr}&horario_esperado=eq.${expStr}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}`, 'x-app-key': CHAVE_URL }
+    });
+
+    if (actStr) {
+      await fetch(`${SUPABASE_URL}/rest/v1/tabela_pontos`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal', 'x-app-key': CHAVE_URL },
+        body: JSON.stringify({ data_registro: dataStr, horario_esperado: expStr, horario_real: actStr, user_id: usuarioLogado.id })
+      });
+    }
+    await carregarDadosNuvem();
+  } catch(e) {
+    toast('Erro ao salvar no servidor.');
+    showLoading(false);
+  }
+}
+
+// --- CONTROLE DE INICIALIZAÇÃO E CAPTURA DE LINKS DO E-MAIL ---
+async function inicializarApp() {
+  supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    console.log("Evento AuthStateChange:", event, session);
+    
+    if (session) {
+      usuarioLogado = session.user;
+      localStorage.setItem('session_access_token', session.access_token);
+    }
+
+    if (event === 'PASSWORD_RECOVERY' || sessionStorage.getItem('is_recovering_password') === 'true') {
+      sessionStorage.setItem('is_recovering_password', 'true');
+      setTimeout(() => {
+        document.getElementById('auth-screen').style.display = 'flex';
+        document.getElementById('app').style.display = 'none';
+        toggleResetMode();
+      }, 150);
+    }
+  });
+
+  // Fallback Analisador Manual de URL
+  let hash = window.location.hash || '';
+  let search = window.location.search || '';
+  let urlParamsStr = hash.startsWith('#') ? hash.replace('#', '?') : search;
+  const urlParams = new URLSearchParams(urlParamsStr);
+  
+  let tokenDoEmail = urlParams.get('access_token');
+  let refreshDoEmail = urlParams.get('refresh_token');
+  let tipoLink = urlParams.get('type');
+  let errorDesc = urlParams.get('error_description');
+
+  if (errorDesc) {
+    toast('O link expirou ou já foi utilizado. Solicite uma nova recuperação.');
+    sessionStorage.removeItem('is_recovering_password');
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  if (tipoLink === 'recovery' || hash.includes('type=recovery') || tokenDoEmail) {
+    sessionStorage.setItem('is_recovering_password', 'true');
+  }
+
+  if (tokenDoEmail) {
+    showLoading(true);
+    try {
+      const { data: sessionData, error: sessionError } = await supabaseClient.auth.setSession({
+        access_token: tokenDoEmail,
+        refresh_token: refreshDoEmail || tokenDoEmail
+      });
+
+      if (!sessionError && sessionData.session) {
+        usuarioLogado = sessionData.user;
+        localStorage.setItem('session_access_token', sessionData.session.access_token);
+        
+        setTimeout(() => {
+          document.getElementById('auth-screen').style.display = 'flex';
+          document.getElementById('app').style.display = 'none';
+          toggleResetMode();
+        }, 150);
+        showLoading(false);
+        return;
+      }
+    } catch (err) {
+      console.error("Falha ao processar injeção manual:", err);
+    } finally {
+      showLoading(false);
+    }
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session && sessionStorage.getItem('is_recovering_password') !== 'true') {
+      usuarioLogado = session.user;
+      localStorage.setItem('session_access_token', session.access_token);
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      await carregarConfiguracaoUsuario();
+      await carregarDadosNuvem();
+      return;
+    }
+  } catch (e) {
+    console.error("Erro na leitura de sessão local persistente:", e);
+  }
+
+  if (sessionStorage.getItem('is_recovering_password') !== 'true') {
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+  }
+}
+
+async function logout() {
+  await supabaseClient.auth.signOut();
+  localStorage.removeItem('session_access_token');
+  usuarioLogado = null;
+  cacheDadosNuvem = {};
+  userConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+  cancelSpecialModes();
+  toast('Você saiu do sistema.');
+}
+
+// --- SISTEMA DINÂMICO DE COMPUTAÇÃO DE HORÁRIOS ---
+function getDaySchedList(d) {
+  const day = d.getDay();
+  const cfg = userConfig || DEFAULT_CONFIG;
+  if (day === 0) {
+    return cfg.sundayEnabled ? (cfg.sunday || []) : [];
+  } else if (day === 6) {
+    return cfg.saturdayEnabled ? (cfg.saturday || []) : [];
+  } else {
+    return cfg.week || [];
+  }
+}
+
+function getSched(d) {
+  return getDaySchedList(d).map(item => item.time);
+}
+
+function getPunchItem(exp, d = currentDate) {
+  const list = getDaySchedList(d);
+  const found = list.find(item => item.time === exp);
+  if (found) return found;
+
+  // Fallback se não encontrar no dia específico (busca em qualquer configuração)
+  const all = [...(userConfig.week || []), ...(userConfig.saturday || []), ...(userConfig.sunday || [])];
+  const anyFound = all.find(item => item.time === exp);
+  if (anyFound) return anyFound;
+
+  // Fallback histórico para horários padrão
+  const isExit = (exp === '12:00' || exp === '18:00');
+  return { time: exp, type: isExit ? 'saida' : 'entrada' };
+}
+
+function dateKey(d){return d.toISOString().slice(0,10)}
+function parseMins(s){const[h,m]=s.split(':').map(Number);return h*60+m}
+function fmtDelta(m){m=Math.round(m);const h=Math.floor(Math.abs(m)/60),r=Math.abs(m)%60;if(h===0)return r+'min';if(r===0)return h+'h';return h+'h '+r+'min'}
+
+// Cálculo preciso de saldo de acordo com o tipo da batida (Entrada ou Saída)
+function getPunchDelta(exp, act, d = currentDate) {
+  const item = getPunchItem(exp, d);
+  const diff = parseMins(exp) - parseMins(act);
+  
+  if (item.type === 'saida') {
+    // Para Saída: Sair depois do esperado gera minutos extras (+). Sair antes gera atraso (-).
+    return -diff;
+  }
+  // Para Entrada: Chegar antes do esperado gera minutos extras (+). Chegar depois gera atraso (-).
+  return diff;
+}
+
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000)}
+function changeDay(dir){currentDate=new Date(currentDate);currentDate.setDate(currentDate.getDate()+dir);render()}
+
+function showTab(tab){
+  ['today','history','period','summary','config','data'].forEach(t=>{
+    const v = document.getElementById('view-'+t);
+    const b = document.getElementById('tab-'+t);
+    if (v) v.style.display = t === tab ? '' : 'none';
+    if (b) b.classList.toggle('active', t === tab);
+  });
+  if(tab==='history') renderHistory();
+  if(tab==='period') {
+    const hoje = new Date();
+    if(!document.getElementById('p-start-date').value) {
+      document.getElementById('p-start-date').value = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0,10);
+    }
+    if(!document.getElementById('p-end-date').value) {
+      document.getElementById('p-end-date').value = hoje.toISOString().slice(0,10);
+    }
+    renderPeriod();
+  }
+  if(tab==='summary') renderSummary();
+  if(tab==='config') renderConfigUI();
+}
+
+function render() {
+  const key=dateKey(currentDate);
+  const punches=cacheDadosNuvem[key]||{};
+  const sched=getSched(currentDate);
+  const isSun=currentDate.getDay()===0;
+  const isSat=currentDate.getDay()===6;
+
+  const hojeKey = dateKey(new Date());
+  const divAvisoData = document.getElementById('past-date-msg');
+  if(key !== hojeKey) {
+    divAvisoData.style.display = 'flex';
+  } else {
+    divAvisoData.style.display = 'none';
+  }
+
+  document.getElementById('day-label').textContent=`${DAYS[currentDate.getDay()]}, ${currentDate.getDate()} ${MONTHS[currentDate.getMonth()]}`;
+  document.getElementById('today-lbl').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+
+  const wm=document.getElementById('weekend-msg');
+  if(isSun){
+    if (userConfig.sundayEnabled && sched.length > 0) {
+      wm.style.display='';
+      wm.innerHTML=`<i class="ti ti-briefcase"></i> Domingo — ${sched.length} batida(s) configurada(s)`;
+    } else {
+      wm.style.display='';
+      wm.innerHTML='<i class="ti ti-coffee"></i> Domingo — Dia de descanso!';
+    }
+  }
+  else if(isSat){
+    if (userConfig.saturdayEnabled && sched.length > 0) {
+      wm.style.display='';
+      wm.innerHTML=`<i class="ti ti-sun"></i> Sábado — ${sched.length} batida(s) configurada(s)`;
+    } else {
+      wm.style.display='';
+      wm.innerHTML='<i class="ti ti-coffee"></i> Sábado — Dia de descanso!';
+    }
+  }
+  else{wm.style.display='none'}
+
+  const sel=document.getElementById('man-exp');
+  sel.innerHTML=sched.map(s=>`<option value="${s}">${s}</option>`).join('');
+
+  let early=0,late=0,html='';
+  sched.forEach(exp=>{
+    const act=punches[exp];
+    const punchItem = getPunchItem(exp, currentDate);
+    const tipoRotulo = punchItem.type === 'saida' ? 'Saída' : 'Entrada';
+    
+    let dHtml='<span class="delta empty">—</span>';
+    let actHtml='<span style="font-size:13px;color:var(--text-muted)">Não registrado</span>';
+    let btn='';
+    
+    if(act){
+      const d = getPunchDelta(exp, act, currentDate);
+      if(d>0){early+=d;dHtml=`<span class="delta early">+${fmtDelta(d)}</span>`}
+      else if(d<0){late+=Math.abs(d);dHtml=`<span class="delta late">-${fmtDelta(Math.abs(d))}</span>`}
+      else{dHtml=`<span class="delta" style="color:var(--text-muted)">No horário</span>`}
+      actHtml=`<span class="act">${act}</span>`;
+      btn=`<button class="icon-btn" onclick="delPunch('${exp}')" aria-label="Remover batida"><i class="ti ti-trash"></i></button>`;
+    } else {
+      btn=`<button class="punch-btn" onclick="registerNow('${exp}')" title="Bater ponto agora"><i class="ti ti-fingerprint"></i></button>`;
+    }
+    html+=`<div class="punch-row"><div class="badge">${exp}</div><div class="pi"><div class="exp">${tipoRotulo}: ${exp}</div>${actHtml}</div>${dHtml}${btn}</div>`;
+  });
+
+  document.getElementById('punches-list').innerHTML=html||'<div style="color:var(--text-muted);font-size:14px;padding:12px 0">Sem horários de trabalho configurados para este dia.</div>';
+  document.getElementById('tot-early').textContent=fmtDelta(early);
+  document.getElementById('tot-late').textContent=fmtDelta(late);
+}
+
+function registerNow(exp){
+  const now=new Date();
+  const act=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  const key=dateKey(currentDate);
+  salvarPontoNuvem(key, exp, act);
+}
+
+function addManual(){
+  const exp=document.getElementById('man-exp').value;
+  const t=document.getElementById('man-time').value;
+  if(!t){toast('Informe o horário');return}
+  const key=dateKey(currentDate);
+  salvarPontoNuvem(key, exp, t);
+}
+
+function delPunch(exp){
+  const key=dateKey(currentDate);
+  salvarPontoNuvem(key, exp, null);
+}
+
+function renderHistory(){
+  const keys=Object.keys(cacheDadosNuvem).sort().reverse().slice(0,60);
+  if(!keys.length){document.getElementById('hist-list').innerHTML='<div style="color:var(--text-muted);font-size:14px;padding:12px 0">Nenhum registro encontrado.</div>';return}
+  let html='';
+  keys.forEach(k=>{
+    const d=new Date(k+'T12:00:00');
+    const sched=getSched(d);const punches=cacheDadosNuvem[k];
+    let early=0,late=0;
+    sched.forEach(exp=>{if(punches[exp]){const dv = getPunchDelta(exp,punches[exp],d);if(dv>0)early+=dv;else late+=Math.abs(dv)}});
+    const bal=early-late;
+    const bCls=bal>0?'pos':bal<0?'neg':'';
+    const pList=sched.map(e=>punches[e]||'—').join(' · ');
+    html+=`<div class="hist-row"><div style="min-width:95px"><div style="font-size:13px;font-weight:600;">${DAYS[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}</div><div style="font-size:11px;color:var(--text-muted)">${pList}</div></div><div style="flex:1"></div><div class="stat-val ${bCls}" style="font-size:14px">${bal>=0?'+':''}${fmtDelta(bal)}</div></div>`;
+  });
+  document.getElementById('hist-list').innerHTML=html;
+}
+
+function renderPeriod(){
+  const startVal = document.getElementById('p-start-date').value;
+  const endVal = document.getElementById('p-end-date').value;
+  
+  if(!startVal || !endVal) return;
+
+  const dStart = new Date(startVal + 'T00:00:00');
+  const dEnd = new Date(endVal + 'T23:59:59');
+
+  let early=0, late=0, days=0;
+
+  Object.keys(cacheDadosNuvem).forEach(k=>{
+    const d=new Date(k+'T12:00:00');
+    if(d < dStart || d > dEnd) return;
+
+    days++;
+    const sched=getSched(d);
+    const punches=cacheDadosNuvem[k];
+    sched.forEach(exp=>{
+      if(punches[exp]){
+        const dv = getPunchDelta(exp,punches[exp],d);
+        if(dv>0) early+=dv;
+        else late+=Math.abs(dv);
+      }
+    });
+  });
+
+  const bal=early-late;
+  document.getElementById('p-early').textContent=fmtDelta(early);
+  document.getElementById('p-late').textContent=fmtDelta(late);
+  document.getElementById('p-bal').textContent=(bal>=0?'+':'-')+fmtDelta(Math.abs(bal));
+  document.getElementById('p-bal').className='stat-val '+(bal>=0?'pos':'neg');
+  document.getElementById('p-days').textContent=days;
+}
+
+function renderSummary(){
+  const now=new Date();const mo=now.getMonth();const yr=now.getFullYear();
+  let early=0,late=0,days=0;
+  Object.keys(cacheDadosNuvem).forEach(k=>{
+    const d=new Date(k+'T12:00:00');
+    if(d.getMonth()!==mo||d.getFullYear()!==yr)return;
+    days++;const sched=getSched(d);const punches=cacheDadosNuvem[k];
+    sched.forEach(exp=>{if(punches[exp]){const dv = getPunchDelta(exp,punches[exp],d);if(dv>0)early+=dv;else late+=Math.abs(dv)}});
+  });
+  const bal=early-late;
+  document.getElementById('m-early').textContent=fmtDelta(early);
+  document.getElementById('m-late').textContent=fmtDelta(late);
+  document.getElementById('m-bal').textContent=(bal>=0?'+':'-')+fmtDelta(Math.abs(bal));
+  document.getElementById('m-bal').className='stat-val '+(bal>=0?'pos':'neg');
+  document.getElementById('m-days').textContent=days;
+}
+
+function buildCSV(keys){
+  const rows=[['Data','Dia da semana','Horário esperado','Tipo','Horário registrado','Diferença (min)','Status']];
+  keys.forEach(k=>{
+    const d=new Date(k+'T12:00:00');
+    const sched=getSched(d);const punches=cacheDadosNuvem[k]||{};
+    sched.forEach(exp=>{
+      const act=punches[exp]||'';
+      const item=getPunchItem(exp, d);
+      const tipoRotulo=item.type==='entrada'?'Entrada':'Saída';
+      let diff='',tipo='';
+      if(act){const dv = getPunchDelta(exp,act,d);diff=dv;tipo=dv>0?'Extra':dv<0?'Atraso':'No horário'}
+      rows.push([k,DAYS[d.getDay()],exp,tipoRotulo,act,diff,tipo]);
+    });
+  });
+  return rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+}
+
+function exportCSV(scope){
+  let keys=Object.keys(cacheDadosNuvem).sort();
+  if(!keys.length){toast('Nenhum dado para exportar');return}
+  const csv=buildCSV(keys);
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`backup_pontos_nuvem.csv`;
+  a.click();URL.revokeObjectURL(url);
+  toast('Backup baixado!');
+}
+
+// Inicializa a aplicação
+inicializarApp();
+</script>
+</body>
+</html>
