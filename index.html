@@ -26,15 +26,35 @@
       --danger: #ef4444;
       --radius: 12px;
       --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+      --bg-page:
+        radial-gradient(circle at 15% 0%, rgba(22, 119, 255, 0.10) 0%, transparent 45%),
+        radial-gradient(circle at 100% 100%, rgba(79, 70, 229, 0.08) 0%, transparent 45%),
+        #f5f7fb;
+
+      /* Tipografia (mesmo padrão da tela de login, aplicado ao sistema todo) */
+      --font-sans: 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
+      --text-placeholder: #94a3b8;
+      --fs-xs: 12px;
+      --fs-sm: 14px;
+      --fs-title: 24px;
+      --fw-regular: 400;
+      --fw-medium: 500;
+      --fw-semibold: 600;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
-    body { background-color: var(--bg-main); color: var(--text-main); padding: 1.5rem; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-sans); }
+    body {
+      background: var(--bg-page); background-attachment: fixed; color: var(--text-main); padding: 1.5rem; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh;
+      font-size: var(--fs-sm); font-weight: var(--fw-regular); line-height: 1.5;
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility;
+    }
+    input, select, button, textarea { font: inherit; color: inherit; }
+    ::placeholder { color: var(--text-placeholder); opacity: 1; }
     .app-container { width: 100%; max-width: 480px; background: var(--bg-card); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border-color); overflow: hidden; padding: 1.5rem; display: none; }
     
     header { margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
-    h1 { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    h1 { font-size: var(--fs-title); font-weight: var(--fw-semibold); line-height: 1.25; display: flex; align-items: center; gap: 8px; }
     h1 i { color: var(--primary); }
-    .sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+    .sub { font-size: var(--fs-sm); color: var(--text-muted); margin-top: 2px; }
 
     .tab-bar { display: flex; gap: 4px; background: #f1f5f9; padding: 4px; border-radius: 8px; margin-bottom: 1.5rem; overflow-x: auto; scrollbar-width: none; }
     .tab-bar::-webkit-scrollbar { display: none; }
@@ -47,11 +67,11 @@
     .date-label { flex: 1; text-align: center; font-size: 15px; font-weight: 600; }
     .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 1.5rem; }
     .stat { background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 14px; }
-    .stat-lbl { font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 4px; }
-    .stat-val { font-size: 20px; font-weight: 700; color: var(--text-main); }
+    .stat-lbl { font-size: var(--fs-xs); font-weight: var(--fw-medium); color: var(--text-muted); margin-bottom: 4px; }
+    .stat-val { font-size: 20px; font-weight: var(--fw-semibold); color: var(--text-main); }
     .stat-val.pos { color: var(--success); }
     .stat-val.neg { color: var(--danger); }
-    .sec-title { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; margin-top: 1rem; }
+    .sec-title { font-size: 11px; font-weight: var(--fw-semibold); color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; margin-top: 1rem; }
     .punch-row { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; transition: transform 0.2s; }
     .punch-row:hover { border-color: #cbd5e1; }
     .badge { font-size: 12px; font-weight: 600; color: var(--primary); background: #eef2ff; border-radius: 6px; padding: 4px 8px; min-width: 50px; text-align: center; }
@@ -63,9 +83,9 @@
     .delta.late { color: var(--danger); }
     .delta.empty { color: var(--text-muted); }
     
-    .btn { padding: 8px 14px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card); cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text-main); display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
+    .btn { padding: 8px 14px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card); cursor: pointer; font-size: var(--fs-sm); font-weight: var(--fw-semibold); color: var(--text-main); display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
     .btn:hover { background: #f8fafc; border-color: #cbd5e1; }
-    .punch-btn { background: var(--primary); color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+    .punch-btn { background: var(--primary); color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: var(--fw-semibold); }
     .punch-btn:hover { background: var(--primary-hover); }
     .icon-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 16px; padding: 6px; border-radius: 6px; }
     .icon-btn:hover { background: #fee2e2; color: var(--danger); }
@@ -73,15 +93,25 @@
     .card { background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 14px; margin-bottom: 1.5rem; }
     .manual-row { display: flex; gap: 10px; align-items: flex-end; }
     .mfield { flex: 1; }
-    .mfield label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
-    .mfield select, .mfield input { width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: white; font-size: 14px; outline: none; }
+    .mfield label { display: block; font-size: var(--fs-xs); font-weight: var(--fw-medium); color: var(--text-muted); margin-bottom: 4px; }
+    .mfield select, .mfield input { width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: white; font-size: var(--fs-sm); color: var(--text-main); outline: none; }
     .hist-row { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border-color); }
     .export-bar { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 1.5rem; }
-    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; border-radius: 8px; padding: 10px 20px; font-size: 13px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 1000; box-shadow: var(--shadow); }
-    .toast.show { opacity: 1; }
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(8px);
+      background: #1e293b; color: white; border-radius: 12px; padding: 12px 20px;
+      font-size: 13px; font-weight: var(--fw-medium);
+      display: flex; align-items: center; gap: 8px;
+      opacity: 0; transition: opacity .25s, transform .25s;
+      pointer-events: none; z-index: 5000;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.25);
+      max-width: calc(100vw - 2rem); text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { background: #dc2626; color: #ffffff; }
     #weekend-msg { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px; text-align: center; font-size: 13px; color: #1e40af; margin-bottom: 1rem; }
     #past-date-msg { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 10px; text-align: center; font-size: 13px; color: #c2410c; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 500; }
-    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); display: none; justify-content: center; align-items: center; z-index: 2000; font-weight: 600; color: var(--primary); }
+    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); display: none; justify-content: center; align-items: center; z-index: 4000; font-weight: 600; color: var(--primary); }
 
     /* Switch toggle */
     .switch-toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
@@ -96,52 +126,137 @@
     .cfg-row input[type="time"] { padding: 6px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; font-weight: 600; flex: 1; }
     .cfg-row select { padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; font-weight: 500; background: white; }
 
-    /* Estilos do Painel de Login/Cadastro */
-    #auth-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-main); z-index: 3000; display: flex; justify-content: center; align-items: center; padding: 1.5rem; }
-    .auth-card { width: 100%; max-width: 400px; background: var(--bg-card); border-radius: var(--radius); padding: 2rem; box-shadow: var(--shadow); border: 1px solid var(--border-color); }
-    .auth-card h2 { margin-bottom: 1.5rem; font-size: 20px; font-weight: 700; text-align: center; }
+    /* Estilos do Painel de Login/Cadastro (baseado no SignIn1 da HextaUI, versão modo claro) */
+    #auth-screen {
+      position: fixed; inset: 0; z-index: 3000;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      padding: 1.5rem; overflow-y: auto;
+      background: var(--bg-page);
+    }
+    .auth-wrapper { margin: auto; width: 100%; display: flex; flex-direction: column; align-items: center; }
+    .auth-card {
+      position: relative; z-index: 1; width: 100%; max-width: 384px;
+      border-radius: 24px; padding: 2rem;
+      display: flex; flex-direction: column; align-items: center;
+      background: linear-gradient(to right, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.75));
+      -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+      border: 1px solid rgba(15, 23, 42, 0.06);
+      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.18);
+    }
+    .auth-logo {
+      width: 72px; height: 72px; border-radius: 22%; overflow: hidden;
+      background: #ffffff; margin-bottom: 1.25rem;
+      box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(15, 23, 42, 0.05);
+    }
+    /* Exibe o icon.png inteiro; o border-radius acompanha os cantos arredondados do próprio ícone */
+    .auth-logo img { display: block; width: 100%; height: 100%; object-fit: contain; }
+    .auth-brand { font-size: 24px; font-weight: 600; color: var(--text-main); text-align: center; margin-bottom: 4px; }
+    .auth-subtitle { font-size: 14px; color: var(--text-muted); text-align: center; margin-bottom: 1.5rem; }
+    .auth-error {
+      width: 100%; display: none; align-items: center; justify-content: center; gap: 6px;
+      background: rgba(239, 68, 68, 0.10); border: 1px solid rgba(239, 68, 68, 0.28);
+      color: #dc2626; font-size: 12px; font-weight: var(--fw-medium);
+      padding: 10px 14px; border-radius: 12px; margin-bottom: 1rem; text-align: center;
+    }
+    .auth-error.show { display: flex; }
+    .auth-form { width: 100%; display: flex; flex-direction: column; gap: 1rem; }
+    .auth-fields { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+    .auth-input {
+      width: 100%; padding: 12px 20px; border-radius: 12px;
+      background: rgba(15, 23, 42, 0.05); border: 1px solid transparent;
+      color: var(--text-main); font-size: 14px; outline: none;
+      transition: box-shadow 0.2s, background 0.2s, border-color 0.2s;
+    }
+    .auth-input:focus { background: #ffffff; border-color: rgba(22, 119, 255, 0.35); box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.18); }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    .auth-forgot { text-align: right; margin-top: -4px; }
+    .auth-forgot a { font-size: 12px; color: var(--text-muted); text-decoration: none; font-weight: 500; transition: color 0.2s; }
+    .auth-forgot a:hover { color: #1677ff; }
+    .auth-divider { border: none; border-top: 1px solid rgba(15, 23, 42, 0.08); margin: 0; }
+    .auth-btn-primary {
+      width: 100%; padding: 12px 20px; border: none; border-radius: 999px; cursor: pointer;
+      font-size: 14px; font-weight: 600; color: #ffffff;
+      background: linear-gradient(to bottom, #1677ff, #0057e7);
+      box-shadow: 0 6px 16px -4px rgba(22, 119, 255, 0.45);
+      transition: filter 0.2s, transform 0.1s;
+    }
+    .auth-btn-primary:hover { filter: brightness(1.08); }
+    .auth-btn-primary:active { transform: scale(0.99); }
+    .auth-footer-text { width: 100%; text-align: center; margin-top: 12px; font-size: 12px; color: var(--text-muted); }
+    .auth-footer-text a { color: var(--text-main); text-decoration: underline; font-weight: 500; }
+    .auth-footer-text a:hover { color: #1677ff; }
+    .auth-social { position: relative; z-index: 1; margin-top: 2.5rem; display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 384px; }
+    .auth-social p { font-size: 14px; color: var(--text-muted); }
+    .auth-social p span { font-weight: 600; color: var(--text-main); }
   </style>
 </head>
 <body>
 
 <div id="auth-screen" style="display: none;">
-  <div class="auth-card">
-    <h2 id="auth-title">Entrar no Sistema</h2>
-    
-    <div class="mfield" id="auth-name-field" style="display: none; margin-bottom: 12px;">
-      <label>Nome Completo</label>
-      <input type="text" id="auth-name" placeholder="Seu Nome">
+  <div class="auth-wrapper">
+    <!-- Card central -->
+    <div class="auth-card">
+      <!-- Logo -->
+      <div class="auth-logo">
+        <img src="./icon.png" alt="Logo UpperTime">
+      </div>
+
+      <!-- Título -->
+      <h2 class="auth-brand">UpperTime</h2>
+      <p class="auth-subtitle" id="auth-title">Efetuar login</p>
+
+      <!-- Alerta de erro no login -->
+      <div id="auth-error" class="auth-error" role="alert"></div>
+
+      <!-- Formulário -->
+      <form class="auth-form" onsubmit="event.preventDefault(); handleAuth();" novalidate>
+        <div class="auth-fields">
+          <div id="auth-name-field" style="display: none;">
+            <label class="sr-only" for="auth-name">Nome Completo</label>
+            <input class="auth-input" type="text" id="auth-name" placeholder="Nome completo" autocomplete="name" oninput="clearAuthError()">
+          </div>
+
+          <div id="auth-email-field">
+            <label class="sr-only" for="auth-email">E-mail</label>
+            <input class="auth-input" type="email" id="auth-email" placeholder="E-mail" autocomplete="email" oninput="clearAuthError()">
+          </div>
+
+          <div id="auth-password-field">
+            <label class="sr-only" for="auth-password" id="label-password">Senha</label>
+            <input class="auth-input" type="password" id="auth-password" placeholder="Senha" autocomplete="current-password" oninput="clearAuthError()">
+          </div>
+
+          <div id="auth-confirm-password-field" style="display: none;">
+            <label class="sr-only" for="auth-confirm-password">Confirmar Senha</label>
+            <input class="auth-input" type="password" id="auth-confirm-password" placeholder="Confirmar senha" autocomplete="new-password" oninput="clearAuthError()">
+          </div>
+
+          <div class="auth-forgot" id="auth-forgot-container">
+            <a href="#" id="auth-forgot-link" onclick="toggleForgotMode(true); return false;">Esqueci minha senha</a>
+          </div>
+        </div>
+
+        <hr class="auth-divider">
+
+        <div>
+          <button type="submit" class="auth-btn-primary" id="btn-auth-primary">Entrar</button>
+
+          <p class="auth-footer-text" id="auth-toggle-container">
+            <span id="auth-switch-text">Não tem uma conta?</span>
+            <a href="#" id="auth-switch-link" onclick="toggleAuthMode(); return false;">Cadastre-se</a>
+          </p>
+
+          <p class="auth-footer-text" id="auth-back-login-container" style="display: none;">
+            <a href="#" onclick="cancelSpecialModes(); return false;" style="text-decoration: none;"><i class="ti ti-arrow-back-up"></i> Voltar para o Login</a>
+          </p>
+        </div>
+      </form>
     </div>
 
-    <div class="mfield" id="auth-email-field">
-      <label>E-mail</label>
-      <input type="email" id="auth-email" placeholder="seu@email.com">
+    <!-- Prova social -->
+    <div class="auth-social">
+      <p>Junte-se a <span>milhares</span> de profissionais que já controlam seu ponto com o UpperTime.</p>
     </div>
-    
-    <div class="mfield" id="auth-password-field" style="margin-top: 12px;">
-      <label id="label-password">Senha</label>
-      <input type="password" id="auth-password" placeholder="••••••••">
-    </div>
-
-    <div class="mfield" id="auth-confirm-password-field" style="margin-top: 12px; display: none;">
-      <label>Confirmar Senha</label>
-      <input type="password" id="auth-confirm-password" placeholder="••••••••">
-    </div>
-
-    <div style="text-align: right; margin-top: 6px;" id="auth-forgot-container">
-      <a href="#" id="auth-forgot-link" onclick="toggleForgotMode(true)" style="font-size: 12px; color: var(--primary); text-decoration: none; font-weight: 600;">Esqueci minha senha</a>
-    </div>
-    
-    <button class="punch-btn" id="btn-auth-primary" onclick="handleAuth()" style="width: 100%; margin-top: 1.5rem; padding: 10px; font-weight: 600; border-radius: 8px;">Entrar</button>
-    
-    <p style="text-align: center; margin-top: 1.2rem; font-size: 13px; color: var(--text-muted);" id="auth-toggle-container">
-      <span id="auth-switch-text">Não tem uma conta?</span> 
-      <a href="#" id="auth-switch-link" onclick="toggleAuthMode()" style="color: var(--primary); font-weight: 600; text-decoration: none;">Cadastre-se</a>
-    </p>
-
-    <p style="text-align: center; margin-top: 1.2rem; font-size: 13px; display: none;" id="auth-back-login-container">
-      <a href="#" onclick="cancelSpecialModes()" style="color: var(--text-muted); font-weight: 600; text-decoration: none;"><i class="ti ti-arrow-back-up"></i> Voltar para o Login</a>
-    </p>
   </div>
 </div>
 
@@ -239,7 +354,7 @@
     <!-- ABA CONFIGURAÇÕES (NOVA) -->
     <div id="view-config" class="tab-view" style="display:none">
       <div class="card" style="margin-bottom: 1rem;">
-        <div style="font-weight: 700; font-size: 15px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+        <div style="font-weight: 600; font-size: 15px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
           <i class="ti ti-settings" style="color: var(--primary);"></i> Configuração de Horários
         </div>
         <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
@@ -371,13 +486,18 @@ let usuarioLogado = null;
 function showLoading(v){ document.getElementById('loading').style.display = v ? 'flex' : 'none'; }
 
 // --- SISTEMA DE DIRECIONAMENTO DE TELAS ---
+function setPasswordLabel(text) {
+  document.getElementById('label-password').textContent = text;
+  document.getElementById('auth-password').placeholder = text;
+}
+
 function toggleAuthMode() {
   isSignUpMode = !isSignUpMode;
   isForgotMode = false;
   isResetMode = false;
   
-  document.getElementById('label-password').textContent = 'Senha';
-  document.getElementById('auth-title').textContent = isSignUpMode ? 'Criar Nova Conta' : 'Entrar no Sistema';
+  setPasswordLabel('Senha');
+  document.getElementById('auth-title').textContent = isSignUpMode ? 'Criar Nova Conta' : 'Efetuar login';
   document.getElementById('btn-auth-primary').textContent = isSignUpMode ? 'Cadastrar' : 'Entrar';
   document.getElementById('auth-switch-text').textContent = isSignUpMode ? 'Já tem uma conta?' : 'Não tem uma conta?';
   document.getElementById('auth-switch-link').textContent = isSignUpMode ? 'Faça Login' : 'Cadastre-se';
@@ -397,8 +517,8 @@ function toggleForgotMode(active) {
   isSignUpMode = false;
   isResetMode = false;
   
-  document.getElementById('label-password').textContent = 'Senha';
-  document.getElementById('auth-title').textContent = active ? 'Recuperar Senha' : 'Entrar no Sistema';
+  setPasswordLabel('Senha');
+  document.getElementById('auth-title').textContent = active ? 'Recuperar Senha' : 'Efetuar login';
   document.getElementById('btn-auth-primary').textContent = active ? 'Enviar E-mail' : 'Entrar';
   
   document.getElementById('auth-name-field').style.display = 'none';
@@ -418,7 +538,7 @@ function toggleResetMode() {
 
   document.getElementById('auth-title').textContent = 'Definir Nova Senha';
   document.getElementById('btn-auth-primary').textContent = 'Salvar Nova Senha';
-  document.getElementById('label-password').textContent = 'Nova Senha';
+  setPasswordLabel('Nova Senha');
   
   document.getElementById('auth-name-field').style.display = 'none';
   document.getElementById('auth-email-field').style.display = 'none';
@@ -435,8 +555,8 @@ function cancelSpecialModes() {
   isForgotMode = false;
   isResetMode = false;
   sessionStorage.removeItem('is_recovering_password');
-  document.getElementById('label-password').textContent = 'Senha';
-  document.getElementById('auth-title').textContent = 'Entrar no Sistema';
+  setPasswordLabel('Senha');
+  document.getElementById('auth-title').textContent = 'Efetuar login';
   document.getElementById('btn-auth-primary').textContent = 'Entrar';
   
   document.getElementById('auth-name-field').style.display = 'none';
@@ -453,22 +573,47 @@ function cancelSpecialModes() {
   }
 }
 
+function clearAuthError() {
+  const el = document.getElementById('auth-error');
+  if (el) {
+    el.textContent = '';
+    el.classList.remove('show');
+  }
+}
+
+const ERROR_ICON_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  if (el) {
+    el.innerHTML = `${ERROR_ICON_SVG}<span>${msg}</span>`;
+    el.classList.add('show');
+  }
+  toast(msg, 'error');
+}
+
 function limparCamposAuth() {
   document.getElementById('auth-password').value = '';
   document.getElementById('auth-confirm-password').value = '';
+  clearAuthError();
 }
 
 // --- MECÂNICA DE AUTENTICAÇÃO CORE ---
 async function handleAuth() {
+  clearAuthError();
   const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
   const confirmPassword = document.getElementById('auth-confirm-password').value;
 
-  if (!email && !isResetMode) { toast('Por favor, informe seu e-mail.'); return; }
-  if (!isForgotMode && !password) { toast('Por favor, informe a senha.'); return; }
+  if (!email && !isResetMode) { showAuthError('Por favor, informe seu e-mail.'); return; }
+  if (!isResetMode && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showAuthError('E-mail inválido. Verifique o endereço digitado.');
+    return;
+  }
+  if (!isForgotMode && !password) { showAuthError('Por favor, informe sua senha.'); return; }
 
   if ((isSignUpMode || isResetMode) && password !== confirmPassword) {
-    toast('As senhas digitadas não são iguais! Verifique a confirmação.');
+    showAuthError('As senhas digitadas não são iguais! Verifique a confirmação.');
     return;
   }
 
@@ -477,7 +622,7 @@ async function handleAuth() {
   try {
     if (isSignUpMode) {
       const name = document.getElementById('auth-name').value.trim();
-      if (!name) { toast('Por favor, informe o seu nome.'); showLoading(false); return; }
+      if (!name) { showAuthError('Por favor, informe o seu nome.'); showLoading(false); return; }
       
       const { data, error } = await supabaseClient.auth.signUp({
         email,
@@ -514,8 +659,8 @@ async function handleAuth() {
         password
       });
       if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-          throw new Error('A senha ou e-mail que botou para fazer login estão errados.');
+        if (error.message.includes('Invalid login credentials') || error.code === 'invalid_credentials') {
+          throw new Error('E-mail ou senha incorretos. Verifique seus dados e tente novamente.');
         }
         throw error;
       }
@@ -531,7 +676,7 @@ async function handleAuth() {
     }
   } catch (e) {
     console.error("Erro no processamento Auth:", e);
-    toast(e.message || 'Ocorreu um erro na validação dos dados.');
+    showAuthError(e.message || 'E-mail ou senha incorretos. Verifique seus dados.');
   } finally {
     showLoading(false);
   }
@@ -901,6 +1046,8 @@ async function logout() {
   cacheDadosNuvem = {};
   userConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
   cancelSpecialModes();
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
   toast('Você saiu do sistema.');
 }
 
@@ -953,7 +1100,19 @@ function getPunchDelta(exp, act, d = currentDate) {
   return diff;
 }
 
-function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000)}
+let toastTimer = null;
+function toast(msg, type = 'default') {
+  const t = document.getElementById('toast');
+  t.classList.toggle('error', type === 'error');
+  if (type === 'error') {
+    t.innerHTML = `${ERROR_ICON_SVG}<span>${msg}</span>`;
+  } else {
+    t.textContent = msg;
+  }
+  t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), type === 'error' ? 4000 : 3000);
+}
 function changeDay(dir){currentDate=new Date(currentDate);currentDate.setDate(currentDate.getDate()+dir);render()}
 
 function showTab(tab){
